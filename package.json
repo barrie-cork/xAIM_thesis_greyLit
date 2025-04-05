@@ -1,0 +1,25 @@
+{
+  "name": "grey-literature-search-and-tag",
+  "version": "1.0.0",
+  "description": "The *Grey Literature Search App* enables researchers to systematically search, screen, and extract insights from non-traditional sources (e.g., government reports, clinical guidelines, white papers) using structured strategies, automation, and transparency.",
+  "author": "Barrie",
+  "type": "module",
+  "scripts": {
+    "dev": "node scripts/dev.js",
+    "list": "node scripts/dev.js list",
+    "generate": "node scripts/dev.js generate",
+    "parse-prd": "node scripts/dev.js parse-prd"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.39.0",
+    "chalk": "^5.3.0",
+    "commander": "^11.1.0",
+    "dotenv": "^16.3.1",
+    "openai": "^4.86.1",
+    "figlet": "^1.7.0",
+    "boxen": "^7.1.1",
+    "gradient-string": "^2.0.2",
+    "cli-table3": "^0.6.3",
+    "ora": "^7.0.1"
+  }
+}
