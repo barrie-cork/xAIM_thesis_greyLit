@@ -10,12 +10,21 @@ import { Context } from './context';
 const t = initTRPC.context<Context>().create({
   transformer: superjson,
   errorFormatter({ shape, error }) {
+    // Improved error formatting for Zod validation errors
+    const zodError = error.cause instanceof ZodError ? error.cause.flatten() : null;
+    
     return {
       ...shape,
       data: {
         ...shape.data,
-        zodError:
-          error.cause instanceof ZodError ? error.cause.flatten() : null,
+        zodError,
+        // Add more detailed information for validation errors
+        validationErrors: zodError 
+          ? Object.entries(zodError.fieldErrors).map(([path, errors]) => ({
+              path,
+              message: errors?.[0] || 'Invalid input',
+            }))
+          : [],
       },
     };
   },
