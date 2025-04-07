@@ -2,6 +2,7 @@ import { TRPCError, initTRPC } from '@trpc/server';
 import superjson from 'superjson';
 import { ZodError } from 'zod';
 import { Context } from './context';
+import logger, { logError } from '../../utils/logger';
 
 /**
  * Initialize tRPC
@@ -10,8 +11,25 @@ import { Context } from './context';
 const t = initTRPC.context<Context>().create({
   transformer: superjson,
   errorFormatter({ shape, error }) {
-    // Improved error formatting for Zod validation errors
+    // Log all errors at the global error formatter level
     const zodError = error.cause instanceof ZodError ? error.cause.flatten() : null;
+    
+    // Only log non-validation errors as actual errors
+    // For validation errors, log at warn level as they're client mistakes
+    if (zodError) {
+      logger.warn({ 
+        path: shape.data?.path, 
+        zodError, 
+        zodFieldErrors: zodError.fieldErrors 
+      }, 'Validation error in request');
+    } else {
+      // For all other errors, log with the full error context
+      logError(error, { 
+        path: shape.data?.path, 
+        code: shape.data?.code,
+        httpStatus: shape.data?.httpStatus
+      });
+    }
     
     return {
       ...shape,
@@ -35,12 +53,49 @@ const t = initTRPC.context<Context>().create({
  * that can be used throughout the router
  */
 export const router = t.router;
-export const publicProcedure = t.procedure;
+export const middleware = t.middleware;
+export const procedure = t.procedure;
+
+/**
+ * Create base logger middleware
+ * This logs information about all requests
+ */
+const loggerMiddleware = middleware(async ({ path, type, next, ctx }) => {
+  const start = Date.now();
+  
+  // Add request metadata to child logger
+  const requestLogger = logger.child({
+    trpc: {
+      path,
+      type,
+      userId: ctx.userId || 'unauthenticated',
+    },
+  });
+
+  // Log the incoming request
+  requestLogger.info({ path, type }, `TRPC ${type} ${path} request`);
+
+  // Execute the request
+  const result = await next();
+  
+  // Log completion and timing
+  const durationMs = Date.now() - start;
+  requestLogger.debug(
+    { durationMs },
+    `TRPC ${type} ${path} completed in ${durationMs}ms`
+  );
+
+  return result;
+});
+
+// Apply logger middleware to all procedures
+const baseProcedure = procedure.use(loggerMiddleware);
+export const publicProcedure = baseProcedure;
 
 /**
  * Middleware to enforce user is authenticated
  */
-const enforceUserIsAuthed = t.middleware(({ ctx, next }) => {
+const enforceUserIsAuthed = middleware(({ ctx, next }) => {
   // Check if user is authenticated
   if (!ctx.userId) {
     throw new TRPCError({ code: 'UNAUTHORIZED' });
@@ -57,5 +112,6 @@ const enforceUserIsAuthed = t.middleware(({ ctx, next }) => {
 
 /**
  * Protected procedure for authenticated users only
+ * This is already using the logger middleware via baseProcedure
  */
-export const protectedProcedure = t.procedure.use(enforceUserIsAuthed); 
+export const protectedProcedure = baseProcedure.use(enforceUserIsAuthed); 
