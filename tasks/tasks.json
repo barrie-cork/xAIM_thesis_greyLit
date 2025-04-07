@@ -1,0 +1,174 @@
+{
+  "tasks": [
+    {
+      "id": 1,
+      "title": "Project Setup and Environment Configuration",
+      "description": "Initialize project repository, configure development environment, and set up basic project structure",
+      "status": "done",
+      "dependencies": [],
+      "priority": "high",
+      "details": "Create a new project repository, configure development environment with necessary tools and dependencies. Set up folder structure following best practices. Include configuration for linting, formatting, and version control. Initialize package.json with required dependencies.",
+      "testStrategy": "Verify that the project builds successfully and all development tools work as expected. Run a smoke test to ensure the basic environment is functioning."
+    },
+    {
+      "id": 2,
+      "title": "Design System and UI Component Library",
+      "description": "Establish design system foundations and implement core UI component library",
+      "status": "done",
+      "dependencies": [1],
+      "priority": "high",
+      "details": "Create a design system with color palette, typography, spacing, and component design specifications. Implement reusable UI components including buttons, inputs, cards, and navigation elements. Ensure components are responsive and accessible following WCAG guidelines.\n\nProgress:\n- ✅ Created accessible Input component with comprehensive features (loading, error, helper text, icons)\n- ✅ Created reusable Label component with required field and error state support\n- ✅ Created Select component with disabled options, loading state, and custom styling\n- ✅ Created Textarea component with character count, resize options, and validation\n- ✅ Created Checkbox component with indeterminate state and accessibility features\n- ✅ Created responsive Header component with mobile menu and accessibility features\n- ✅ Created responsive Sidebar component with collapsible state and nested navigation\n- ✅ Implemented Storybook documentation for all components\n- ✅ Added comprehensive test coverage for all components\n- ✅ Set up visual regression testing infrastructure with Storybook's addon-storyshots-puppeteer\n\nAll components are now complete and fully tested.",
+      "testStrategy": "Create visual regression tests for components. Implement accessibility testing with tools like Axe. Create storybook or equivalent documentation for component showcase and testing."
+    },
+    {
+      "id": 3,
+      "title": "Implement Authentication and User Management System",
+      "description": "Set up user authentication (login, registration, password reset) and session management using Supabase Auth.",
+      "status": "done",
+      "dependencies": [1, 2],
+      "priority": "high",
+      "details": [
+        "Configure Supabase client (both client-side and server-side)",
+        "Set up environment variables for Supabase URL and keys",
+        "Create auth helper functions/hooks",
+        "Implement Login form component",
+        "Implement Registration form component",
+        "Implement Password reset flow components/pages",
+        "Create necessary auth pages (login, register, verify-email, auth-error, reset-password)",
+        "Set up Supabase email templates",
+        "Implement route protection using middleware",
+        "Handle auth callbacks and session management",
+        "Add necessary UI elements (e.g., logout button)",
+        "Write tests for authentication flow (unit/integration)"
+      ],
+      "testStrategy": "Verify user can register, receive confirmation email, verify email, login, request password reset, receive reset email, reset password, and logout. Test protected routes.",
+      "subtasks": []
+    },
+    {
+      "id": 4,
+      "title": "Database Schema and API Layer Implementation",
+      "description": "Set up database schema, Prisma ORM, and tRPC API layer",
+      "status": "in_progress",
+      "dependencies": [1, 3],
+      "priority": "high",
+      "details": "Implement database and API infrastructure:\n\nDatabase Setup (✅ COMPLETED):\n- ✅ Configure PostgreSQL in Supabase\n- ✅ Create Prisma schema for all tables:\n  - users\n  - search_requests\n  - search_results\n  - review_tags\n  - duplicate_log\n- ✅ Set up database migrations\n- ✅ Configure indexes for performance\n- ✅ Implement Row Level Security (RLS)\n\nAPI Layer (🔄 IN PROGRESS):\n- Set up tRPC server and router with auth context\n- Create type-safe procedures for:\n  - User authentication and profile management\n  - Search strategy and saved searches\n  - Results storage and deduplication\n  - Review tagging and collaboration\n- Implement proper error handling and logging\n- Set up API documentation and testing\n\nData Models (✅ COMPLETED):\n- ✅ Implement all data models as specified in database_architecture.md\n- ✅ Set up proper relationships and foreign keys\n- ✅ Configure JSONB fields for flexible metadata\n- Implement proper data validation using Zod",
+      "testStrategy": "- Unit test all tRPC procedures\n- Test database operations and relationships\n- Verify type safety across the stack\n- Performance testing for complex queries\n- Test data validation and error handling\n- Verify proper error logging and handling",
+      "subtasks": [
+        {
+          "id": "4.1",
+          "title": "Set up tRPC Server and Base Configuration",
+          "status": "pending",
+          "description": "Initialize tRPC server with Next.js integration and configure base router with authentication context"
+        },
+        {
+          "id": "4.2",
+          "title": "Implement Authentication and User API",
+          "status": "pending",
+          "description": "Create tRPC procedures for user management, session handling, and profile operations"
+        },
+        {
+          "id": "4.3",
+          "title": "Implement Search Strategy API",
+          "status": "pending",
+          "description": "Create tRPC procedures for search request management, saved searches, and personal dashboards"
+        },
+        {
+          "id": "4.4",
+          "title": "Implement Search Results API",
+          "status": "pending",
+          "description": "Create tRPC procedures for result storage, retrieval, and deduplication logging"
+        },
+        {
+          "id": "4.5",
+          "title": "Implement Review System API",
+          "status": "pending",
+          "description": "Create tRPC procedures for review tagging, notes management, and collaborative review features"
+        },
+        {
+          "id": "4.6",
+          "title": "Implement Data Validation Layer",
+          "status": "pending",
+          "description": "Create Zod schemas for all data models and API inputs/outputs with proper validation rules"
+        },
+        {
+          "id": "4.7",
+          "title": "Set up Error Handling and Logging",
+          "status": "pending",
+          "description": "Implement global error handling, request logging, and proper error responses"
+        },
+        {
+          "id": "4.8",
+          "title": "Create API Documentation and Testing Suite",
+          "status": "pending",
+          "description": "Generate API documentation using tRPC-OpenAPI and implement comprehensive testing"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "title": "Search Strategy Builder Implementation",
+      "description": "Implement the search strategy builder with MeSH integration",
+      "status": "pending",
+      "dependencies": [2, 4],
+      "priority": "high",
+      "details": "Create the search strategy builder component:\n\nCore Features:\n- Implement structured concept input (Population, Interest, Context)\n- Create MeSH term integration:\n  - Set up local MeSH dataset\n  - Implement term expansion algorithm\n  - Create efficient lookup system\n- Build query builder interface\n- Implement search engine selection\n- Add filetype filters\n- Create clinical guideline terms toggle\n- Implement search strategy saving\n\nTechnical Implementation:\n- Set up MeSH data storage and access\n- Create efficient term suggestion system\n- Implement query validation\n- Build search preview functionality\n- Create search history tracking",
+      "testStrategy": "- Test MeSH term expansion accuracy\n- Verify query building logic\n- Test search strategy saving/loading\n- Performance test term suggestions\n- Validate generated queries"
+    },
+    {
+      "id": 6,
+      "title": "SERP Execution and Results Management",
+      "description": "Implement search execution and results processing system",
+      "status": "pending",
+      "dependencies": [4, 5],
+      "priority": "high",
+      "details": "Create the search execution and results management system:\n\nSERP Execution:\n- Implement API integration (Serper, SerpAPI)\n- Create query execution system with pagination\n- Build result parsing and normalization\n- Implement rate limiting and error handling\n- Set up result storage and enrichment\n\nResults Management:\n- Create deduplication system:\n  - URL normalization\n  - Fuzzy title matching\n  - Duplicate logging\n- Implement result filtering\n- Create result enrichment pipeline\n- Build result storage and caching\n\nTechnical Requirements:\n- Use string-similarity for fuzzy matching\n- Implement efficient pagination\n- Create proper error handling\n- Set up result caching\n- Implement proper logging",
+      "testStrategy": "- Test API integration reliability\n- Verify deduplication accuracy\n- Test pagination handling\n- Performance test result processing\n- Validate error handling"
+    },
+    {
+      "id": 7,
+      "title": "Review Interface Implementation",
+      "description": "Create the review interface for screening and tagging results",
+      "status": "pending",
+      "dependencies": [2, 6],
+      "priority": "medium",
+      "details": "Implement the review interface:\n\nFeatures:\n- Create result screening interface\n- Implement tagging system (Include, Exclude, Maybe)\n- Add exclusion reason tracking\n- Create note-taking functionality\n- Implement progress tracking\n- Add filtering and sorting\n- Create auto-save functionality\n\nTechnical Implementation:\n- Build efficient result loading\n- Implement real-time state updates\n- Create progress persistence\n- Set up proper error handling\n- Implement keyboard shortcuts",
+      "testStrategy": "- Test tagging functionality\n- Verify auto-save reliability\n- Test filtering and sorting\n- Validate progress tracking\n- Test keyboard shortcuts"
+    },
+    {
+      "id": 8,
+      "title": "Reporting and Export System",
+      "description": "Implement PRISMA-aligned reporting and export functionality",
+      "status": "pending",
+      "dependencies": [6, 7],
+      "priority": "medium",
+      "details": "Create the reporting and export system:\n\nFeatures:\n- Implement PRISMA 2020 metrics generation\n- Create export functionality for:\n  - Markdown format\n  - HTML format\n  - CSV format\n- Include all required metrics:\n  - Search configurations\n  - Result statistics\n  - Screening decisions\n  - URLs and notes\n\nTechnical Implementation:\n- Build metric calculation system\n- Create export formatters\n- Implement proper error handling\n- Set up export file storage\n- Create export progress tracking",
+      "testStrategy": "- Verify metric calculations\n- Test all export formats\n- Validate large export handling\n- Test error scenarios\n- Verify export completeness"
+    },
+    {
+      "id": 9,
+      "title": "Email Notifications and Sharing",
+      "description": "Implement email notifications and report sharing",
+      "status": "pending",
+      "dependencies": [3, 8],
+      "priority": "low",
+      "details": "Implement email functionality:\n\nFeatures:\n- Set up Resend email service\n- Create email templates for:\n  - Account verification\n  - Password reset\n  - Report sharing\n- Implement email preferences\n- Create sharing functionality\n\nTechnical Implementation:\n- Configure Resend integration\n- Build email template system\n- Implement proper error handling\n- Create email tracking\n- Set up email queue management",
+      "testStrategy": "- Test email delivery\n- Verify template rendering\n- Test email preferences\n- Validate error handling\n- Test email queuing"
+    },
+    {
+      "id": 10,
+      "title": "Final Testing and Deployment",
+      "description": "Comprehensive testing and deployment preparation",
+      "status": "pending",
+      "dependencies": [1, 2, 3, 4, 5, 6, 7, 8, 9],
+      "priority": "high",
+      "details": "Prepare for production deployment:\n\nTesting:\n- Run comprehensive test suite\n- Perform security audit\n- Conduct performance testing\n- Complete accessibility testing\n\nDeployment:\n- Set up production environment\n- Configure CI/CD pipeline\n- Create backup strategy\n- Prepare rollback procedures\n- Finalize documentation\n\nOptimization:\n- Perform code optimization\n- Implement caching strategy\n- Configure monitoring\n- Set up error tracking",
+      "testStrategy": "- Execute full test suite\n- Perform load testing\n- Conduct security testing\n- Test backup/restore\n- Verify monitoring"
+    }
+  ],
+  "metadata": {
+    "projectName": "Grey Literature Search App",
+    "totalTasks": 10,
+    "sourceFile": "project_docs/PRD.md",
+    "generatedAt": "2024-04-06"
+  }
+}

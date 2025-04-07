@@ -1,0 +1,52 @@
+graph TB
+    subgraph "Presentation Layer"
+        UI[UI Components]
+        Pages[Pages]
+        Layouts[Layouts]
+    end
+    
+    subgraph "Application Layer"
+        UseCases[Use Cases]
+        AppServices[Application Services]
+        StateManagement[State Management]
+    end
+    
+    subgraph "Domain Layer"
+        Entities[Domain Entities]
+        Interfaces[Domain Interfaces]
+        BusinessRules[Business Rules]
+    end
+    
+    subgraph "Infrastructure Layer"
+        ExtServices[External Services]
+        Persistence[Persistence]
+        Communication[Communication]
+    end
+    
+    UI --> Pages
+    Pages --> Layouts
+    Pages --> UseCases
+    UseCases --> AppServices
+    UseCases --> Entities
+    AppServices --> Interfaces
+    AppServices --> BusinessRules
+    Interfaces --> ExtServices
+    Persistence --> Entities
+    Communication --> AppServices
+    
+    subgraph "Cross-cutting Concerns"
+        ErrorHandling[Error Handling]
+        Logging[Logging]
+        Security[Security]
+        Config[Configuration]
+    end
+    
+    ErrorHandling -.-> UI
+    ErrorHandling -.-> UseCases
+    ErrorHandling -.-> ExtServices
+    Logging -.-> UseCases
+    Logging -.-> ExtServices
+    Security -.-> Pages
+    Security -.-> Persistence
+    Config -.-> ExtServices
+    Config -.-> AppServices
