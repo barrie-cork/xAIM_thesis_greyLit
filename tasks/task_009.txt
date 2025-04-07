@@ -1,11 +1,31 @@
 # Task ID: 9
-# Title: Analytics and Reporting
+# Title: Email Notifications and Sharing
 # Status: pending
-# Dependencies: 6, 7
+# Dependencies: 3, 8
 # Priority: low
-# Description: Implement analytics tracking and reporting functionality
+# Description: Implement email notifications and report sharing
 # Details:
-Integrate analytics tracking for user actions and events. Create dashboard for key metrics visualization. Implement export functionality for reports. Set up scheduled reports if required. Ensure proper data anonymization and privacy compliance.
+Implement email functionality:
+
+Features:
+- Set up Resend email service
+- Create email templates for:
+  - Account verification (leveraging Supabase Auth)
+  - Password reset (leveraging Supabase Auth)
+  - Report sharing
+- Implement email preferences
+- Create sharing functionality
+
+Technical Implementation:
+- Configure Resend integration with tRPC procedures
+- Build email template system
+- Implement proper error handling
+- Create email tracking in Supabase
+- Set up email queue management
 
 # Test Strategy:
-Verify analytics events are properly tracked. Test report generation with various parameters. Validate exported data formats. Test performance with large datasets.
+- Test email delivery
+- Verify template rendering
+- Test email preferences
+- Validate error handling with tRPC
+- Test email queuing

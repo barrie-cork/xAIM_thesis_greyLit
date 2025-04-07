@@ -1,11 +1,34 @@
 # Task ID: 8
-# Title: Notifications System
+# Title: Reporting and Export System
 # Status: pending
-# Dependencies: 3, 4, 6
+# Dependencies: 6, 7
 # Priority: medium
-# Description: Implement in-app and email notification system
+# Description: Implement PRISMA-aligned reporting and export functionality
 # Details:
-Create notification system for in-app alerts and messages. Implement email notifications for important events. Add notification preferences and management UI. Ensure proper queueing and delivery of notifications. Implement real-time notifications if required.
+Create the reporting and export system:
+
+Features:
+- Implement PRISMA 2020 metrics generation
+- Create export functionality for:
+  - Markdown format
+  - HTML format
+  - CSV format
+- Include all required metrics:
+  - Search configurations
+  - Result statistics
+  - Screening decisions
+  - URLs and notes
+
+Technical Implementation:
+- Build metric calculation system with tRPC procedures
+- Create export formatters
+- Implement proper error handling
+- Set up export file storage in Supabase Storage
+- Create export progress tracking
 
 # Test Strategy:
-Test notification triggers across various user actions. Verify email delivery and formatting. Test notification preferences are respected. Simulate high-volume notification scenarios for performance testing.
+- Verify metric calculations
+- Test all export formats
+- Validate large export handling
+- Test error scenarios with tRPC error handling
+- Verify export completeness

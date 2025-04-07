@@ -1,11 +1,34 @@
 # Task ID: 5
-# Title: User Profile and Settings Management
+# Title: Search Strategy Builder Implementation
 # Status: pending
-# Dependencies: 2, 3, 4
-# Priority: medium
-# Description: Implement user profile functionality including profile editing, preferences, and account settings
+# Dependencies: 2, 4
+# Priority: high
+# Description: Implement the search strategy builder with MeSH integration
 # Details:
-Create user profile page with editable fields for personal information. Implement account settings including notification preferences, privacy settings, and account deletion. Add profile picture upload and management. Ensure all changes are properly validated and persisted to the database.
+Create the search strategy builder component:
+
+Core Features:
+- Implement structured concept input (Population, Interest, Context)
+- Create MeSH term integration:
+  - Set up local MeSH dataset
+  - Implement term expansion algorithm
+  - Create efficient lookup system
+- Build query builder interface
+- Implement search engine selection
+- Add filetype filters
+- Create clinical guideline terms toggle
+- Implement search strategy saving
+
+Technical Implementation:
+- Set up MeSH data storage and access in Supabase
+- Create efficient term suggestion system using tRPC endpoints
+- Implement query validation with Zod schemas
+- Build search preview functionality with React
+- Create search history tracking in Supabase database
 
 # Test Strategy:
-Write unit tests for profile update logic. Create integration tests for the complete profile management flow. Test edge cases like invalid inputs and file upload limitations.
+- Test MeSH term expansion accuracy
+- Verify query building logic with Jest
+- Test search strategy saving/loading with Supabase
+- Performance test term suggestions
+- Validate generated queries
