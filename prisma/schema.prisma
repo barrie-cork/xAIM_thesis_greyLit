@@ -1,0 +1,100 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider          = "postgresql"
+  url               = env("DATABASE_URL")
+  directUrl         = env("DIRECT_URL")
+  shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
+  extensions        = [pgcrypto, uuid_ossp(map: "uuid-ossp", schema: "extensions")]
+}
+
+model User {
+  id             String          @id @db.Uuid
+  email          String?         @unique
+  createdAt      DateTime?       @map("created_at") @db.Timestamptz(6)
+  lastLogin      DateTime?       @map("last_login") @db.Timestamptz(6)
+  reviewTags     ReviewTag[]
+  searchRequests SearchRequest[]
+
+  @@map("users")
+}
+
+model SearchRequest {
+  queryId       String         @id @default(uuid()) @map("query_id") @db.Uuid
+  userId        String         @map("user_id") @db.Uuid
+  query         String
+  source        String
+  filters       Json?
+  timestamp     DateTime       @default(now())
+  searchTitle   String?        @map("search_title")
+  isSaved       Boolean        @default(false) @map("is_saved")
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  searchResults SearchResult[]
+
+  @@map("search_requests")
+}
+
+model SearchResult {
+  id               String         @id @default(uuid()) @db.Uuid
+  queryId          String         @map("query_id") @db.Uuid
+  title            String?
+  url              String?
+  snippet          String?
+  rank             Int?
+  resultType       String?        @map("result_type")
+  searchEngine     String?        @map("search_engine")
+  device           String?
+  location         String?
+  language         String?
+  totalResults     Int?           @map("total_results")
+  creditsUsed      Int?           @map("credits_used")
+  searchId         String?        @map("search_id")
+  searchUrl        String?        @map("search_url")
+  relatedSearches  Json?          @map("related_searches")
+  similarQuestions Json?          @map("similar_questions")
+  timestamp        DateTime       @default(now())
+  rawResponse      Json?          @map("raw_response")
+  deduped          Boolean        @default(true)
+  duplicateLog     DuplicateLog[] @relation("OriginalResult")
+  reviewTags       ReviewTag[]
+  searchRequest    SearchRequest  @relation(fields: [queryId], references: [queryId], onDelete: Cascade)
+
+  @@map("search_results")
+}
+
+model DuplicateLog {
+  duplicateId      String        @id @default(uuid()) @map("duplicate_id") @db.Uuid
+  originalResultId String?       @map("original_result_id") @db.Uuid
+  duplicateUrl     String?       @map("duplicate_url")
+  searchEngine     String?       @map("search_engine")
+  reason           String?
+  timestamp        DateTime      @default(now())
+  originalResult   SearchResult? @relation("OriginalResult", fields: [originalResultId], references: [id])
+
+  @@map("duplicate_log")
+}
+
+model ReviewTag {
+  id              String       @id @default(uuid()) @db.Uuid
+  resultId        String       @map("result_id") @db.Uuid
+  tag             TagEnum?
+  exclusionReason String?      @map("exclusion_reason")
+  notes           String?
+  retrieved       Boolean      @default(false)
+  reviewerId      String?      @map("reviewer_id") @db.Uuid
+  createdAt       DateTime     @default(now()) @map("created_at")
+  updatedAt       DateTime     @default(now()) @updatedAt @map("updated_at")
+  searchResult    SearchResult @relation(fields: [resultId], references: [id], onDelete: Cascade)
+  reviewer        User?        @relation(fields: [reviewerId], references: [id])
+
+  @@map("review_tags")
+}
+
+enum TagEnum {
+  include
+  exclude
+  maybe
+}
