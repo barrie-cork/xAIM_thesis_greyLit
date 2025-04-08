@@ -9,19 +9,19 @@ export { Input } from './input';
 export { Label } from './label';
 export { Textarea } from './textarea';
 export { Checkbox } from './checkbox';
-export { Switch } from './switch';
-export { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from './select';
 
 // Layout and containers
-export { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from './card';
-export { Tabs, TabsList, TabsTrigger, TabsContent } from './tabs';
+export { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from './card';
+export { Tabs, TabsContent, TabsList, TabsTrigger } from './tabs';
 export { Separator } from './separator';
 
 // Feedback and status
 export { Spinner } from './spinner';
 export { Badge } from './badge';
-export { Alert, AlertTitle, AlertDescription } from './alert';
+export { Alert, AlertDescription, AlertTitle } from './alert';
 export { Chip } from './chip';
 
 // Dialogs and overlays
-export { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from './dialog'; 
+export { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from './dialog';
+export { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './select';
+export { Switch } from './switch';
