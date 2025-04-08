@@ -1,21 +1,11 @@
-import { router } from './trpc';
-import { healthRouter } from './routers/health';
-import { userRouter } from './routers/user';
-import { searchRouter } from './routers/search';
-import { resultsRouter } from './routers/results';
-import { reviewRouter } from './routers/review';
+import { router } from './procedures';
 
 /**
- * Main application router
- * @link https://trpc.io/docs/router
+ * Main router for all tRPC routes
  */
 export const appRouter = router({
-  health: healthRouter,
-  user: userRouter,
-  search: searchRouter,
-  results: resultsRouter,
-  review: reviewRouter,
+  // Routes go here
 });
 
-// Export type definition of API
+// export type definition of API
 export type AppRouter = typeof appRouter; 
