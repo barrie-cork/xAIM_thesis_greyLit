@@ -1,22 +1,10 @@
-import { z } from 'zod';
 import { TRPCError } from '@trpc/server';
 import { protectedProcedure, router } from '../trpc';
-
-// Input validation schema for search request
-const searchRequestSchema = z.object({
-  query: z.string().min(1, "Search query can't be empty"),
-  source: z.string().min(1, "Source can't be empty"),
-  filters: z.any().optional(),
-  search_title: z.string().optional(),
-  is_saved: z.boolean().default(false),
-});
-
-// Input validation for updating a search
-const updateSearchSchema = z.object({
-  query_id: z.string().uuid(),
-  search_title: z.string().optional(),
-  is_saved: z.boolean().optional(),
-});
+import { 
+  searchRequestInputSchema, 
+  searchRequestUpdateSchema, 
+  searchRequestByIdSchema 
+} from '../../../schemas/search-request.schema';
 
 /**
  * Search router
@@ -25,7 +13,7 @@ const updateSearchSchema = z.object({
 export const searchRouter = router({
   // Create a new search request
   create: protectedProcedure
-    .input(searchRequestSchema)
+    .input(searchRequestInputSchema)
     .mutation(async ({ ctx, input }) => {
       const { userId } = ctx;
 
@@ -99,7 +87,7 @@ export const searchRouter = router({
 
   // Get search request by ID
   getById: protectedProcedure
-    .input(z.object({ query_id: z.string().uuid() }))
+    .input(searchRequestByIdSchema)
     .query(async ({ ctx, input }) => {
       const { userId } = ctx;
 
@@ -139,7 +127,7 @@ export const searchRouter = router({
 
   // Update search request (e.g., title, saved status)
   update: protectedProcedure
-    .input(updateSearchSchema)
+    .input(searchRequestUpdateSchema)
     .mutation(async ({ ctx, input }) => {
       const { userId } = ctx;
 
@@ -186,7 +174,7 @@ export const searchRouter = router({
 
   // Delete search request
   delete: protectedProcedure
-    .input(z.object({ query_id: z.string().uuid() }))
+    .input(searchRequestByIdSchema)
     .mutation(async ({ ctx, input }) => {
       const { userId } = ctx;
 

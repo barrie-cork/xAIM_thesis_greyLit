@@ -1,6 +1,6 @@
-import { z } from 'zod';
 import { TRPCError } from '@trpc/server';
 import { protectedProcedure, publicProcedure, router } from '../trpc';
+import { userProfileSchema } from '../../../schemas/user.schema';
 
 /**
  * User router
@@ -27,12 +27,7 @@ export const userRouter = router({
 
   // Update user profile
   updateProfile: protectedProcedure
-    .input(
-      z.object({
-        email: z.string().email().optional(),
-        // Add any other profile fields here
-      })
-    )
+    .input(userProfileSchema)
     .mutation(async ({ ctx, input }) => {
       const { userId } = ctx;
 

@@ -1,28 +1,11 @@
-import { z } from 'zod';
 import { TRPCError } from '@trpc/server';
 import { protectedProcedure, router } from '../trpc';
-
-// Validation schema for creating a search result
-const createResultSchema = z.object({
-  queryId: z.string().uuid(),
-  title: z.string().min(1),
-  url: z.string().url(),
-  snippet: z.string().optional().nullable(),
-  rank: z.number().optional().nullable(),
-  resultType: z.string().optional().nullable(),
-  searchEngine: z.string().optional().nullable(),
-  device: z.string().optional().nullable(),
-  location: z.string().optional().nullable(),
-  language: z.string().optional().nullable(),
-  totalResults: z.number().optional().nullable(),
-  creditsUsed: z.number().optional().nullable(),
-  searchId: z.string().optional().nullable(),
-  searchUrl: z.string().optional().nullable(),
-  relatedSearches: z.any().optional().nullable(),
-  similarQuestions: z.any().optional().nullable(),
-  rawResponse: z.any().optional().nullable(),
-  deduped: z.boolean().default(true),
-});
+import { 
+  searchResultInputSchema, 
+  searchResultBulkCreateSchema, 
+  searchResultByIdSchema, 
+  searchResultByQueryIdSchema 
+} from '../../../schemas/search-result.schema';
 
 /**
  * Results router
@@ -31,14 +14,14 @@ const createResultSchema = z.object({
 export const resultsRouter = router({
   // Create a new search result
   create: protectedProcedure
-    .input(createResultSchema)
+    .input(searchResultInputSchema)
     .mutation(async ({ ctx, input }) => {
       const { userId } = ctx;
 
       try {
         // First check if the search request exists and belongs to the user
         const searchRequest = await ctx.prisma.searchRequest.findUnique({
-          where: { queryId: input.queryId },
+          where: { query_id: input.queryId },
         });
 
         if (!searchRequest) {
@@ -48,7 +31,7 @@ export const resultsRouter = router({
           });
         }
 
-        if (searchRequest.userId !== userId) {
+        if (searchRequest.user_id !== userId) {
           throw new TRPCError({
             code: 'FORBIDDEN',
             message: 'You do not have permission to add results to this search',
@@ -59,24 +42,24 @@ export const resultsRouter = router({
         const searchResult = await ctx.prisma.searchResult.create({
           data: {
             id: crypto.randomUUID(),
-            queryId: input.queryId,
+            query_id: input.queryId,
             title: input.title,
             url: input.url,
             snippet: input.snippet,
             rank: input.rank,
-            resultType: input.resultType,
-            searchEngine: input.searchEngine,
+            result_type: input.resultType,
+            search_engine: input.searchEngine,
             device: input.device,
             location: input.location,
             language: input.language,
-            totalResults: input.totalResults,
-            creditsUsed: input.creditsUsed,
-            searchId: input.searchId,
-            searchUrl: input.searchUrl,
-            relatedSearches: input.relatedSearches,
-            similarQuestions: input.similarQuestions,
+            total_results: input.totalResults,
+            credits_used: input.creditsUsed,
+            search_id: input.searchId,
+            search_url: input.searchUrl,
+            related_searches: input.relatedSearches,
+            similar_questions: input.similarQuestions,
             timestamp: new Date(),
-            rawResponse: input.rawResponse,
+            raw_response: input.rawResponse,
             deduped: input.deduped,
           },
         });
@@ -95,7 +78,7 @@ export const resultsRouter = router({
 
   // Create multiple search results in bulk
   createBulk: protectedProcedure
-    .input(z.array(createResultSchema))
+    .input(searchResultBulkCreateSchema)
     .mutation(async ({ ctx, input }) => {
       const { userId } = ctx;
 
@@ -108,7 +91,7 @@ export const resultsRouter = router({
       try {
         // First check if the search request exists and belongs to the user
         const searchRequest = await ctx.prisma.searchRequest.findUnique({
-          where: { queryId },
+          where: { query_id: queryId },
         });
 
         if (!searchRequest) {
@@ -118,7 +101,7 @@ export const resultsRouter = router({
           });
         }
 
-        if (searchRequest.userId !== userId) {
+        if (searchRequest.user_id !== userId) {
           throw new TRPCError({
             code: 'FORBIDDEN',
             message: 'You do not have permission to add results to this search',
@@ -129,24 +112,24 @@ export const resultsRouter = router({
         const searchResults = await ctx.prisma.searchResult.createMany({
           data: input.map(result => ({
             id: crypto.randomUUID(),
-            queryId: result.queryId,
+            query_id: result.queryId,
             title: result.title,
             url: result.url,
             snippet: result.snippet,
             rank: result.rank,
-            resultType: result.resultType,
-            searchEngine: result.searchEngine,
+            result_type: result.resultType,
+            search_engine: result.searchEngine,
             device: result.device,
             location: result.location,
             language: result.language,
-            totalResults: result.totalResults,
-            creditsUsed: result.creditsUsed,
-            searchId: result.searchId,
-            searchUrl: result.searchUrl,
-            relatedSearches: result.relatedSearches,
-            similarQuestions: result.similarQuestions,
+            total_results: result.totalResults,
+            credits_used: result.creditsUsed,
+            search_id: result.searchId,
+            search_url: result.searchUrl,
+            related_searches: result.relatedSearches,
+            similar_questions: result.similarQuestions,
             timestamp: new Date(),
-            rawResponse: result.rawResponse,
+            raw_response: result.rawResponse,
             deduped: result.deduped,
           })),
         });
@@ -165,14 +148,14 @@ export const resultsRouter = router({
 
   // Get search results for a query
   getByQueryId: protectedProcedure
-    .input(z.object({ queryId: z.string().uuid() }))
+    .input(searchResultByQueryIdSchema)
     .query(async ({ ctx, input }) => {
       const { userId } = ctx;
 
       try {
         // First check if the search request exists and belongs to the user
         const searchRequest = await ctx.prisma.searchRequest.findUnique({
-          where: { queryId: input.queryId },
+          where: { query_id: input.queryId },
         });
 
         if (!searchRequest) {
@@ -182,7 +165,7 @@ export const resultsRouter = router({
           });
         }
 
-        if (searchRequest.userId !== userId) {
+        if (searchRequest.user_id !== userId) {
           throw new TRPCError({
             code: 'FORBIDDEN',
             message: 'You do not have access to results for this search',
@@ -192,7 +175,7 @@ export const resultsRouter = router({
         // Get search results
         const searchResults = await ctx.prisma.searchResult.findMany({
           where: { 
-            queryId: input.queryId,
+            query_id: input.queryId,
             deduped: true, // Only return non-duplicated results
           },
           orderBy: { rank: 'asc' },
@@ -212,7 +195,7 @@ export const resultsRouter = router({
 
   // Get a specific search result by ID
   getById: protectedProcedure
-    .input(z.object({ id: z.string().uuid() }))
+    .input(searchResultByIdSchema)
     .query(async ({ ctx, input }) => {
       const { userId } = ctx;
 
@@ -233,7 +216,7 @@ export const resultsRouter = router({
         }
 
         // Verify ownership via the search request
-        if (searchResult.searchRequest.userId !== userId) {
+        if (searchResult.searchRequest.user_id !== userId) {
           throw new TRPCError({
             code: 'FORBIDDEN',
             message: 'You do not have access to this search result',

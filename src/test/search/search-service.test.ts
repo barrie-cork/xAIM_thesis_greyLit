@@ -8,7 +8,8 @@ import {
   DEFAULT_SEARCH_CONFIG,
   SearchError,
   SearchErrorType,
-  FileType
+  FileType,
+  DeduplicationService
 } from '@/lib/search';
 
 // Properly type the fetch mock
@@ -245,5 +246,132 @@ describe('SearchService', () => {
     await expect(searchService.search({
       query: 'test query'
     })).rejects.toThrow('Authentication failed for Serper API');
+  });
+  
+  test('should deduplicate search results by default', async () => {
+    // Mock a response with duplicate results
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        organic: [
+          {
+            title: 'Duplicate Result',
+            link: 'https://example.com/result1',
+            snippet: 'This is a duplicate result'
+          },
+          {
+            title: 'Duplicate Result',  // Same title
+            link: 'https://example.org/result2', // Different domain
+            snippet: 'This is a duplicate result with slight variation'
+          },
+          {
+            title: 'Unique Result',
+            link: 'https://example.com/unique',
+            snippet: 'This is a unique result'
+          }
+        ]
+      })
+    } as Response);
+    
+    // Execute search
+    const results = await searchService.search({
+      query: 'test query'
+    });
+    
+    // Verify deduplication was applied
+    expect(results[0].results.length).toBeLessThan(3);
+    expect(results[0].metadata.deduplication?.enabled).toBe(true);
+    expect(results[0].metadata.deduplication?.originalCount).toBe(3);
+    expect(results[0].metadata.deduplication?.duplicatesRemoved).toBeGreaterThan(0);
+  });
+  
+  test('should skip deduplication when explicitly disabled', async () => {
+    // Mock a response with duplicate results
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        organic: [
+          {
+            title: 'Duplicate Result',
+            link: 'https://example.com/result1',
+            snippet: 'This is a duplicate result'
+          },
+          {
+            title: 'Duplicate Result',  // Same title
+            link: 'https://example.org/result2', // Different domain
+            snippet: 'This is a duplicate result with slight variation'
+          },
+          {
+            title: 'Unique Result',
+            link: 'https://example.com/unique',
+            snippet: 'This is a unique result'
+          }
+        ]
+      })
+    } as Response);
+    
+    // Execute search with deduplication disabled
+    const results = await searchService.search({
+      query: 'test query',
+      deduplication: false
+    });
+    
+    // Verify no deduplication was applied
+    expect(results[0].results.length).toBe(3);
+    expect(results[0].metadata.deduplication?.enabled).toBe(false);
+    expect(results[0].metadata.deduplication?.duplicatesRemoved).toBe(0);
+  });
+  
+  test('should use custom deduplication threshold when provided', async () => {
+    // Create a spy to monitor DeduplicationService creation
+    const originalDeduplicationService = DeduplicationService;
+    let capturedThreshold: number | undefined;
+    
+    // Use a higher threshold for stricter deduplication (more duplicates found)
+    const customThreshold = 0.7; // Lower threshold means more duplicates
+    
+    // Mock the DeduplicationService to capture the threshold
+    (global as any).DeduplicationService = jest.fn((threshold) => {
+      capturedThreshold = threshold;
+      return new originalDeduplicationService(threshold);
+    });
+    
+    // Mock a response with similar but not identical results
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        organic: [
+          {
+            title: 'Diabetes Treatment Options',
+            link: 'https://example.com/result1',
+            snippet: 'Information about diabetes treatments'
+          },
+          {
+            title: 'Diabetes Treatment Guidelines', // Similar title
+            link: 'https://example.org/result2',
+            snippet: 'Medical guidelines for diabetes treatment'
+          },
+          {
+            title: 'Unrelated Topic',
+            link: 'https://example.com/unique',
+            snippet: 'This is a completely different topic'
+          }
+        ]
+      })
+    } as Response);
+    
+    // Execute search with custom deduplication threshold
+    const results = await searchService.search({
+      query: 'diabetes treatment',
+      deduplication: {
+        titleSimilarityThreshold: customThreshold
+      }
+    });
+    
+    // Restore the original DeduplicationService
+    (global as any).DeduplicationService = originalDeduplicationService;
+    
+    // Verify the custom threshold was used
+    expect(capturedThreshold).toBe(customThreshold);
   });
 }); 
