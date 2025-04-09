@@ -11,6 +11,7 @@
 # next.js
 /.next/
 /out/
+.next
 
 # production
 /build
@@ -18,6 +19,8 @@
 # misc
 .DS_Store
 *.pem
+.cursorignore
+temp.txt
 
 # debug
 npm-debug.log*
@@ -51,4 +54,7 @@ certs/
 
 # Logs
 logs
-*.log 
+*.log
+
+# Task management files
+scripts/task-complexity-report.json 

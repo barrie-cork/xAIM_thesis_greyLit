@@ -98,3 +98,88 @@ enum TagEnum {
   exclude
   maybe
 }
+
+// MeSH Models
+model MeshDescriptor {
+  id            String          @id @default(cuid())
+  descriptorUI  String          @unique
+  descriptorName String
+  annotation    String?
+  treeNumbers   String[]
+  scopeNote     String?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  
+  // Relationships
+  concepts      MeshConcept[]
+  qualifiers    MeshQualifier[]
+  actions       MeshPharmAction[]
+}
+
+model MeshConcept {
+  id                  String          @id @default(cuid())
+  conceptUI           String          @unique
+  preferredName       String
+  isPreferred         Boolean         @default(false)
+  semanticTypes       String[]
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+  
+  // Relationships
+  descriptor          MeshDescriptor  @relation(fields: [descriptorId], references: [id], onDelete: Cascade)
+  descriptorId        String
+  terms               MeshTerm[]
+  conceptRelations    MeshConceptRelation[]
+}
+
+model MeshTerm {
+  id                String          @id @default(cuid())
+  termUI            String          @unique
+  termName          String
+  isPreferred       Boolean         @default(false)
+  lexicalTag        String?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  
+  // Relationships
+  concept           MeshConcept     @relation(fields: [conceptId], references: [id], onDelete: Cascade)
+  conceptId         String
+  
+  // Index for search
+  @@index([termName])
+}
+
+model MeshQualifier {
+  id              String          @id @default(cuid())
+  qualifierUI     String          @unique
+  qualifierName   String
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  
+  // Relationships
+  descriptors     MeshDescriptor[]
+}
+
+model MeshPharmAction {
+  id              String          @id @default(cuid())
+  actionName      String
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  
+  // Relationships
+  descriptors     MeshDescriptor[]
+}
+
+model MeshConceptRelation {
+  id                  String      @id @default(cuid())
+  relationType        String      // "broader", "narrower", "related"
+  sourceConceptId     String
+  targetConceptId     String
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
+  
+  // Relationships
+  sourceConcept       MeshConcept @relation(fields: [sourceConceptId], references: [id], onDelete: Cascade)
+  
+  @@unique([sourceConceptId, targetConceptId])
+}
