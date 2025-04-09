@@ -20,15 +20,15 @@ Features:
   - URLs and notes
 
 Technical Implementation:
-- Build metric calculation system with tRPC procedures
+- Build metric calculation system
 - Create export formatters
 - Implement proper error handling
-- Set up export file storage in Supabase Storage
+- Set up export file storage
 - Create export progress tracking
 
 # Test Strategy:
 - Verify metric calculations
 - Test all export formats
 - Validate large export handling
-- Test error scenarios with tRPC error handling
+- Test error scenarios
 - Verify export completeness

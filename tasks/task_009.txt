@@ -10,22 +10,22 @@ Implement email functionality:
 Features:
 - Set up Resend email service
 - Create email templates for:
-  - Account verification (leveraging Supabase Auth)
-  - Password reset (leveraging Supabase Auth)
+  - Account verification
+  - Password reset
   - Report sharing
 - Implement email preferences
 - Create sharing functionality
 
 Technical Implementation:
-- Configure Resend integration with tRPC procedures
+- Configure Resend integration
 - Build email template system
 - Implement proper error handling
-- Create email tracking in Supabase
+- Create email tracking
 - Set up email queue management
 
 # Test Strategy:
 - Test email delivery
 - Verify template rendering
 - Test email preferences
-- Validate error handling with tRPC
+- Validate error handling
 - Test email queuing

@@ -8,7 +8,7 @@
 Implement the review interface:
 
 Features:
-- Create result screening interface using React components
+- Create result screening interface
 - Implement tagging system (Include, Exclude, Maybe)
 - Add exclusion reason tracking
 - Create note-taking functionality
@@ -17,15 +17,15 @@ Features:
 - Create auto-save functionality
 
 Technical Implementation:
-- Build efficient result loading with tRPC queries
-- Implement real-time state updates with React hooks
-- Create progress persistence in Supabase
-- Set up proper error handling with tRPC
-- Implement keyboard shortcuts with React hotkeys
+- Build efficient result loading
+- Implement real-time state updates
+- Create progress persistence
+- Set up proper error handling
+- Implement keyboard shortcuts
 
 # Test Strategy:
 - Test tagging functionality
-- Verify auto-save reliability with Supabase
+- Verify auto-save reliability
 - Test filtering and sorting
 - Validate progress tracking
 - Test keyboard shortcuts

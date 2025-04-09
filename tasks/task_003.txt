@@ -5,7 +5,18 @@
 # Priority: high
 # Description: Set up user authentication (login, registration, password reset) and session management using Supabase Auth.
 # Details:
-Configure Supabase client (both client-side and server-side)\nSet up environment variables for Supabase URL and keys\nCreate auth helper functions/hooks\nImplement Login form component\nImplement Registration form component\nImplement Password reset flow components/pages\nCreate necessary auth pages (login, register, verify-email, auth-error, reset-password)\nSet up Supabase email templates\nImplement route protection using middleware\nHandle auth callbacks and session management\nAdd necessary UI elements (e.g., logout button)\nWrite tests for authentication flow (unit/integration)
+Configure Supabase client (both client-side and server-side)
+Set up environment variables for Supabase URL and keys
+Create auth helper functions/hooks
+Implement Login form component
+Implement Registration form component
+Implement Password reset flow components/pages
+Create necessary auth pages (login, register, verify-email, auth-error, reset-password)
+Set up Supabase email templates
+Implement route protection using middleware
+Handle auth callbacks and session management
+Add necessary UI elements (e.g., logout button)
+Write tests for authentication flow (unit/integration)
 
 # Test Strategy:
 Verify user can register, receive confirmation email, verify email, login, request password reset, receive reset email, reset password, and logout. Test protected routes.
