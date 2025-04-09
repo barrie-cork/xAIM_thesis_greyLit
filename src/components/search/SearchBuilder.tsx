@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/router';
 import {
   Card,
   CardHeader,
@@ -22,7 +23,7 @@ import {
   Textarea,
   Badge
 } from '@/components/ui';
-import { Search, Copy, ExternalLink, Plus, X, List, Settings, Trash2, Info, AlertCircle } from 'lucide-react';
+import { Search, Copy, ExternalLink, Plus, X, List, Settings, Trash2, Info, AlertCircle, Database, PlayCircle } from 'lucide-react';
 
 // Concept group types
 type ConceptId = 'population' | 'interest' | 'context';
@@ -42,7 +43,6 @@ interface SearchOptions {
   };
   trustedDomains: string[];
   searchEngines: {
-    google: boolean;
     bing: boolean;
     duckduckgo: boolean;
     serpapi: boolean;
@@ -50,17 +50,16 @@ interface SearchOptions {
   };
   maxResultsPerEngine: number;
   includeGuidelineTerms: boolean;
+  useBroadSearch: boolean;
+  useGoogleScholar: boolean;
 }
 
 // Clinical guideline terms
 const GUIDELINE_TERMS = [
-  "guideline",
-  "recommendation",
+  "guideline*",
+  "recommendation*", 
   "consensus",
-  "guidance",
-  "standard of care",
-  "practice guideline",
-  "clinical protocol"
+  "guidance"
 ];
 
 export default function SearchBuilder() {
@@ -71,29 +70,80 @@ export default function SearchBuilder() {
     { id: 'context', name: 'Context', terms: [] }
   ]);
   
+  // Get router instance at the component level
+  const router = useRouter();
+  
+  // State to track if we have previous search results
+  const [hasRecentSearch, setHasRecentSearch] = useState<boolean>(false);
+  const [recentSearchQuery, setRecentSearchQuery] = useState<string>('');
+  
   // State for term input
   const [termInput, setTermInput] = useState<string>('');
   const [activeConceptId, setActiveConceptId] = useState<ConceptId>('population');
   
-  // State for search options
-  const [options, setOptions] = useState<SearchOptions>({
-    fileTypes: {
-      pdf: true,
-      doc: true,
-      ppt: false,
-      html: false
-    },
-    trustedDomains: [],
-    searchEngines: {
-      google: true,
-      bing: false,
-      duckduckgo: false,
-      serpapi: false,
-      serper: false
-    },
-    maxResultsPerEngine: 50,
-    includeGuidelineTerms: false
+  // Initialize search options state with localStorage if available
+  const [options, setOptions] = useState<SearchOptions>(() => {
+    // Check if we're in the browser
+    if (typeof window !== 'undefined') {
+      const savedOptions = localStorage.getItem('searchBuilderOptions');
+      if (savedOptions) {
+        try {
+          return JSON.parse(savedOptions);
+        } catch (e) {
+          console.error('Failed to parse saved options:', e);
+        }
+      }
+    }
+    
+    // Default options
+    return {
+      fileTypes: {
+        pdf: true,
+        doc: true,
+        ppt: false,
+        html: false
+      },
+      trustedDomains: [],
+      searchEngines: {
+        bing: false,
+        duckduckgo: false,
+        serpapi: false,
+        serper: true
+      },
+      maxResultsPerEngine: 50,
+      includeGuidelineTerms: false,
+      useBroadSearch: false,
+      useGoogleScholar: false
+    };
   });
+  
+  // Initialize concepts state with localStorage if available
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedConcepts = localStorage.getItem('searchBuilderConcepts');
+      if (savedConcepts) {
+        try {
+          setConcepts(JSON.parse(savedConcepts));
+        } catch (e) {
+          console.error('Failed to parse saved concepts:', e);
+        }
+      }
+    }
+  }, []);
+  
+  // Save options to localStorage whenever they change
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('searchBuilderOptions', JSON.stringify(options));
+    }
+  }, [options]);
+  
+  // Save concepts to localStorage whenever they change
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('searchBuilderConcepts', JSON.stringify(concepts));
+    }
+  }, [concepts]);
 
   // State for domain input
   const [domainInput, setDomainInput] = useState<string>('');
@@ -101,8 +151,19 @@ export default function SearchBuilder() {
   // Active tab state
   const [activeTab, setActiveTab] = useState('build');
 
+  // Add logic to check for previous search on component mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const recentSearch = localStorage.getItem('recentSearchQuery');
+      if (recentSearch) {
+        setHasRecentSearch(true);
+        setRecentSearchQuery(recentSearch);
+      }
+    }
+  }, []);
+
   // Function to generate search queries based on user input
-  const generateSearchQuery = (specificDomain?: string): string => {
+  const generateSearchQuery = (specificDomain?: string, isScholar = false): string => {
     // Create the base query using concepts
     let query = '';
     
@@ -128,19 +189,16 @@ export default function SearchBuilder() {
         query += `"${term}"`;
       });
       
-      // Add clinical guideline terms if enabled and this is the context concept
-      if (options.includeGuidelineTerms && concept.id === 'context') {
-        if (concept.terms.length > 0) {
-          query += ' OR ';
-        }
-        query += GUIDELINE_TERMS.map(term => `"${term}"`).join(' OR ');
-      }
-      
       // Close the parentheses for multiple terms
       if (concept.terms.length > 1) {
         query += ')';
       }
     });
+    
+    // Add clinical guideline terms if enabled (regardless of which concept)
+    if (options.includeGuidelineTerms && nonEmptyConcepts.length > 0) {
+      query += ` AND (${GUIDELINE_TERMS.join(' OR ')})`;
+    }
     
     // Add file type restrictions
     const activeFileTypes = Object.entries(options.fileTypes)
@@ -152,26 +210,52 @@ export default function SearchBuilder() {
       query += activeFileTypes.map(fileType => `filetype:${fileType}`).join(' OR ');
     }
     
-    // Add trusted domain - only add the specified domain or none if not specified
-    if (specificDomain) {
+    // Add site restriction for domain-specific searches
+    if (specificDomain && !isScholar) {
       if (query.length > 0) query += ' ';
       query += `site:${specificDomain}`;
-    } else if (options.trustedDomains.length === 1) {
-      if (query.length > 0) query += ' ';
-      query += `site:${options.trustedDomains[0]}`;
+    }
+    
+    // Add Google Scholar specific modifications if needed
+    if (isScholar) {
+      // No site restriction needed, Google Scholar is accessed directly via its URL
+      // We could add scholar-specific modifiers here if needed
     }
     
     return query;
   };
 
-  // Generate all search queries (one per domain, or just one if no domains)
-  const generateAllSearchQueries = (): string[] => {
-    if (options.trustedDomains.length <= 1) {
-      const query = generateSearchQuery();
-      return query ? [query] : [];
-    } else {
-      return options.trustedDomains.map(domain => generateSearchQuery(domain));
+  // Generate all search queries based on current options
+  const generateAllSearchQueries = (): { query: string; type: 'domain' | 'broad' | 'scholar'; domain?: string }[] => {
+    const queries: { query: string; type: 'domain' | 'broad' | 'scholar'; domain?: string }[] = [];
+    
+    // Add domain-specific queries
+    if (options.trustedDomains.length > 0) {
+      options.trustedDomains.forEach(domain => {
+        const query = generateSearchQuery(domain);
+        if (query) {
+          queries.push({ query, type: 'domain', domain });
+        }
+      });
     }
+    
+    // Add broad search query if enabled
+    if (options.useBroadSearch) {
+      const query = generateSearchQuery();
+      if (query) {
+        queries.push({ query, type: 'broad' });
+      }
+    }
+    
+    // Add Google Scholar query if enabled
+    if (options.useGoogleScholar) {
+      const query = generateSearchQuery(undefined, true);
+      if (query) {
+        queries.push({ query, type: 'scholar' });
+      }
+    }
+    
+    return queries;
   };
 
   // Handle adding a term to a concept
@@ -256,18 +340,22 @@ export default function SearchBuilder() {
   };
 
   // Handle executing the search for a specific query
-  const handleExecuteSearch = (specificQuery?: string) => {
-    const query = specificQuery || generateSearchQuery();
+  const handleExecuteSearch = (searchInfo: { query: string; type: 'domain' | 'broad' | 'scholar'; domain?: string }) => {
+    const { query, type } = searchInfo;
     if (!query) return;
     
     // Get the first active search engine
     let searchEngineUrl = '';
-    if (options.searchEngines.google) {
-      searchEngineUrl = 'https://www.google.com/search?q=';
+    
+    if (type === 'scholar') {
+      searchEngineUrl = 'https://scholar.google.com/scholar?q=';
     } else if (options.searchEngines.bing) {
       searchEngineUrl = 'https://www.bing.com/search?q=';
     } else if (options.searchEngines.duckduckgo) {
       searchEngineUrl = 'https://duckduckgo.com/?q=';
+    } else {
+      // Default to serper for API searches
+      searchEngineUrl = 'https://www.google.com/search?q=';
     }
     
     if (searchEngineUrl) {
@@ -279,12 +367,10 @@ export default function SearchBuilder() {
 
   // Handle button click for executing search
   const handleExecuteSearchClick = () => {
-    handleExecuteSearch();
-  };
-
-  // Handle button click for executing a specific search
-  const handleExecuteSpecificSearchClick = (specificQuery: string) => () => {
-    handleExecuteSearch(specificQuery);
+    const queries = generateAllSearchQueries();
+    if (queries.length > 0) {
+      handleExecuteSearch(queries[0]);
+    }
   };
 
   // Handle copying a specific query to clipboard
@@ -301,16 +387,11 @@ export default function SearchBuilder() {
     handleCopyQuery();
   };
 
-  // Handle button click for copying a specific query
-  const handleCopySpecificQueryClick = (specificQuery: string) => () => {
-    handleCopyQuery(specificQuery);
-  };
-
   // Copy all queries to clipboard
   const handleCopyAllQueries = () => {
     const queries = generateAllSearchQueries();
     if (queries.length > 0) {
-      navigator.clipboard.writeText(queries.join('\n\n'));
+      navigator.clipboard.writeText(queries.map(q => q.query).join('\n\n'));
       alert('All search queries copied to clipboard!');
     }
   };
@@ -321,8 +402,96 @@ export default function SearchBuilder() {
   // Check if any concept has terms
   const hasAnyTerms = concepts.some(concept => concept.terms.length > 0);
 
+  // Handle navigating to the search results page with our API
+  const handleAPISearchClick = () => {
+    const queries = generateAllSearchQueries();
+    if (queries.length === 0) return;
+    
+    // Store the search query in localStorage
+    localStorage.setItem('recentSearchQuery', queries[0].query);
+    
+    router.push({
+      pathname: '/search-results',
+      query: { 
+        q: queries[0].query,
+        max: options.maxResultsPerEngine,
+        dedup: 'true', // Enable deduplication
+        scholar: queries[0].type === 'scholar' ? 'true' : 'false',
+        // Add query type
+        query_type: queries[0].type,
+        // Pass domains as a comma-separated string if it's a domain search
+        domains: queries[0].type === 'domain' && options.trustedDomains.length > 0 
+          ? options.trustedDomains.join(',') 
+          : undefined
+      }
+    });
+  };
+
+  // Update the execute all searches function to run multiple searches in parallel
+  const handleExecuteAllSearchesClick = () => {
+    // Get all search queries
+    const queries = generateAllSearchQueries();
+    if (queries.length === 0) return;
+    
+    // Store all search queries in localStorage
+    localStorage.setItem('recentSearchQueries', JSON.stringify(queries));
+    localStorage.setItem('recentSearchQuery', queries[0].query);
+    
+    // Prepare data for batch processing
+    const batchId = Date.now().toString();
+    
+    // Redirect to search results with batch info
+    router.push({
+      pathname: '/search-results',
+      query: { 
+        batch: 'true',
+        batch_id: batchId,
+        batch_size: queries.length,
+        q: queries[0].query, // Use first query as the primary query
+        max: options.maxResultsPerEngine,
+        dedup: 'true',
+        // Include all queries as a JSON string
+        all_queries: JSON.stringify(queries.map(q => ({
+          query: q.query,
+          type: q.type,
+          domain: q.domain
+        }))),
+        // Pass domains as a comma-separated string
+        domains: options.trustedDomains.length > 0 
+          ? options.trustedDomains.join(',') 
+          : undefined
+      }
+    });
+  };
+
+  // Add a new function to view recent search results
+  const handleViewRecentResults = () => {
+    router.push({
+      pathname: '/search-results',
+      query: { 
+        q: recentSearchQuery,
+        max: options.maxResultsPerEngine,
+        dedup: 'true'
+      }
+    });
+  };
+
   return (
     <div className="container mx-auto py-6">
+      <div className="flex justify-between items-center mb-4">
+        <h1 className="text-2xl font-bold">Advanced Search Builder</h1>
+        {hasRecentSearch && (
+          <Button 
+            variant="outline" 
+            onClick={handleViewRecentResults}
+            className="flex items-center"
+          >
+            <Search className="h-4 w-4 mr-2" />
+            View Latest Results
+          </Button>
+        )}
+      </div>
+      
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="build">
@@ -417,20 +586,31 @@ export default function SearchBuilder() {
                         </AlertDescription>
                       </Alert>
                     )}
-                    
-                    {concept.id === 'context' && (
-                      <div className="flex items-center space-x-2 mt-4">
-                        <Switch
-                          id="guideline-terms"
-                          checked={options.includeGuidelineTerms}
-                          onCheckedChange={handleGuidelineTermsToggle}
-                        />
-                        <Label htmlFor="guideline-terms">Include Clinical Guideline Terms</Label>
-                      </div>
-                    )}
                   </TabsContent>
                 ))}
               </Tabs>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader>
+              <CardTitle>Search Enhancement</CardTitle>
+              <CardDescription>
+                Additional terms and modifiers to improve search results
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="guideline-terms"
+                  checked={options.includeGuidelineTerms}
+                  onCheckedChange={handleGuidelineTermsToggle}
+                />
+                <Label htmlFor="guideline-terms">Include Clinical Guideline Terms</Label>
+              </div>
+              <p className="text-sm text-gray-500">
+                Add standard clinical guideline terms to all concepts: (guideline* OR recommendation* OR consensus OR guidance)
+              </p>
             </CardContent>
           </Card>
           
@@ -483,7 +663,7 @@ export default function SearchBuilder() {
               <Separator />
               
               <div className="space-y-2">
-                <h3 className="text-sm font-medium">Trusted Domains</h3>
+                <h3 className="text-sm font-medium">Trusted Domains & Search Types</h3>
                 <div className="flex space-x-2">
                   <Input
                     placeholder="e.g., www.who.int"
@@ -522,6 +702,36 @@ export default function SearchBuilder() {
                     Add trusted domains to limit your search to specific websites.
                   </p>
                 )}
+                
+                <div className="space-y-2 mt-4">
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="broad-search"
+                      checked={options.useBroadSearch}
+                      onCheckedChange={(checked) => setOptions({
+                        ...options,
+                        useBroadSearch: checked
+                      })}
+                    />
+                    <Label htmlFor="broad-search">
+                      Include broad search (without domain restrictions)
+                    </Label>
+                  </div>
+                  
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="google-scholar"
+                      checked={options.useGoogleScholar}
+                      onCheckedChange={(checked) => setOptions({
+                        ...options,
+                        useGoogleScholar: checked
+                      })}
+                    />
+                    <Label htmlFor="google-scholar">
+                      Include Google Scholar search
+                    </Label>
+                  </div>
+                </div>
               </div>
               
               <Separator />
@@ -529,14 +739,6 @@ export default function SearchBuilder() {
               <div className="space-y-2">
                 <h3 className="text-sm font-medium">Search Engines</h3>
                 <div className="grid grid-cols-3 gap-4">
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      id="google-engine"
-                      checked={options.searchEngines.google}
-                      onCheckedChange={() => handleSearchEngineToggle('google')}
-                    />
-                    <Label htmlFor="google-engine">Google</Label>
-                  </div>
                   <div className="flex items-center space-x-2">
                     <Switch
                       id="bing-engine"
@@ -586,6 +788,54 @@ export default function SearchBuilder() {
                 />
               </div>
             </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader>
+              <CardTitle>Execute Searches</CardTitle>
+              <CardDescription>
+                Run your search strategy across all trusted domains
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-gray-600 mb-4">
+                Execute your search {options.trustedDomains.length > 1 ? 
+                  `across all ${options.trustedDomains.length} trusted domains` : 
+                  'query'} using our API with deduplication enabled.
+              </p>
+              
+              {!hasAnyTerms && (
+                <Alert variant="warning" className="mb-4">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertTitle>No search terms added</AlertTitle>
+                  <AlertDescription>
+                    Add search terms to at least one concept before executing searches.
+                  </AlertDescription>
+                </Alert>
+              )}
+              
+              {options.trustedDomains.length === 0 && (
+                <Alert variant="warning" className="mb-4">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertTitle>No trusted domains</AlertTitle>
+                  <AlertDescription>
+                    Consider adding trusted domains to narrow your search scope.
+                  </AlertDescription>
+                </Alert>
+              )}
+            </CardContent>
+            <CardFooter>
+              <Button 
+                className="w-full" 
+                onClick={handleExecuteAllSearchesClick}
+                disabled={!hasAnyTerms}
+                size="lg"
+                variant="default"
+              >
+                <PlayCircle className="h-5 w-5 mr-2" />
+                Execute All Searches
+              </Button>
+            </CardFooter>
           </Card>
         </TabsContent>
         
@@ -641,29 +891,19 @@ export default function SearchBuilder() {
                     </Button>
                   </div>
                   
-                  {options.trustedDomains.map((domain, index) => {
-                    const domainQuery = generateSearchQuery(domain);
+                  {generateAllSearchQueries().map(({ query, type, domain }, index) => {
                     return (
-                      <div key={domain} className="space-y-2">
-                        <h3 className="text-sm font-medium">Query for {domain}</h3>
+                      <div key={query} className="space-y-2">
+                        <h3 className="text-sm font-medium">Query for {type === 'domain' ? domain : type === 'broad' ? 'all domains' : 'Google Scholar'}</h3>
                         <div className="bg-gray-50 p-4 rounded-md">
                           <code className="text-sm whitespace-pre-wrap break-all">
-                            {domainQuery}
+                            {query}
                           </code>
                         </div>
                         
                         <div className="flex space-x-2">
                           <Button 
-                            onClick={handleCopySpecificQueryClick(domainQuery)}
-                            size="sm"
-                          >
-                            <Copy className="h-4 w-4 mr-2" />
-                            Copy
-                          </Button>
-                          
-                          <Button 
-                            variant="default" 
-                            onClick={handleExecuteSpecificSearchClick(domainQuery)}
+                            onClick={() => handleExecuteSearch({ query, type })}
                             size="sm"
                           >
                             <Search className="h-4 w-4 mr-2" />
@@ -671,7 +911,7 @@ export default function SearchBuilder() {
                           </Button>
                         </div>
                         
-                        {index < options.trustedDomains.length - 1 && <Separator className="my-4" />}
+                        {index < generateAllSearchQueries().length - 1 && <Separator className="my-4" />}
                       </div>
                     );
                   })}
@@ -738,23 +978,32 @@ export default function SearchBuilder() {
               <Separator />
               
               <div className="space-y-2">
-                <h3 className="text-sm font-medium">Trusted Domains</h3>
+                <h3 className="text-sm font-medium">Search Types</h3>
                 <div className="flex flex-wrap gap-1">
-                  {options.trustedDomains.length > 0 ? (
-                    options.trustedDomains.map((domain) => (
-                      <Badge key={domain} variant="outline" className="mr-1">
-                        {domain}
-                      </Badge>
-                    ))
-                  ) : (
-                    <p className="text-sm text-gray-500">No domains specified</p>
+                  {options.trustedDomains.length > 0 && (
+                    <Badge variant="outline" className="mr-1 bg-blue-50 border-blue-300">
+                      Domain-specific Searches ({options.trustedDomains.length})
+                    </Badge>
+                  )}
+                  {options.useBroadSearch && (
+                    <Badge variant="outline" className="mr-1 bg-green-50 border-green-300">
+                      Broad Search (no domain restriction)
+                    </Badge>
+                  )}
+                  {options.useGoogleScholar && (
+                    <Badge variant="outline" className="mr-1 bg-purple-50 border-purple-300">
+                      Google Scholar
+                    </Badge>
+                  )}
+                  {!options.useBroadSearch && !options.useGoogleScholar && options.trustedDomains.length === 0 && (
+                    <p className="text-sm text-gray-500">No search types selected</p>
                   )}
                 </div>
                 
-                {options.trustedDomains.length > 1 && (
+                {generateAllSearchQueries().length > 1 && (
                   <p className="text-sm text-gray-600 mt-2">
                     <AlertCircle className="h-4 w-4 inline mr-1" />
-                    A separate search query will be generated for each domain.
+                    Multiple search queries will be generated ({generateAllSearchQueries().length} total).
                   </p>
                 )}
               </div>
@@ -782,37 +1031,38 @@ export default function SearchBuilder() {
             </CardContent>
             <CardFooter>
               {options.trustedDomains.length <= 1 ? (
+                <div className="w-full space-y-2">
+                  <div className="flex space-x-2">
+                    <Button 
+                      className="flex-1" 
+                      onClick={handleExecuteSearchClick}
+                      disabled={!hasAnyTerms}
+                    >
+                      <ExternalLink className="h-4 w-4 mr-2" />
+                      Search in Browser
+                    </Button>
+                    
+                    <Button 
+                      className="flex-1" 
+                      onClick={handleAPISearchClick}
+                      disabled={!hasAnyTerms}
+                      variant="default"
+                    >
+                      <Database className="h-4 w-4 mr-2" />
+                      Execute API Search
+                    </Button>
+                  </div>
+                </div>
+              ) : (
                 <Button 
                   className="w-full" 
-                  onClick={handleExecuteSearchClick}
+                  onClick={handleExecuteAllSearchesClick}
                   disabled={!hasAnyTerms}
+                  variant="default"
                 >
-                  <ExternalLink className="h-4 w-4 mr-2" />
-                  Launch Search
+                  <Database className="h-4 w-4 mr-2" />
+                  Execute All Searches
                 </Button>
-              ) : (
-                <div className="w-full space-y-2">
-                  <p className="text-sm text-gray-600 text-center">
-                    Multiple search queries available (one per domain).
-                  </p>
-                  <Button 
-                    className="w-full" 
-                    onClick={() => {
-                      const previewTab = document.querySelector('[data-value="preview"]');
-                      if (previewTab) {
-                        const previewRect = previewTab.getBoundingClientRect();
-                        window.scrollTo({
-                          top: window.scrollY + previewRect.top - 100,
-                          behavior: 'smooth'
-                        });
-                      }
-                    }}
-                    disabled={!hasAnyTerms}
-                  >
-                    <Search className="h-4 w-4 mr-2" />
-                    View Queries
-                  </Button>
-                </div>
               )}
             </CardFooter>
           </Card>
