@@ -7,8 +7,50 @@ export interface SearchResult {
   metadata: Record<string, any>;
 }
 
+export interface DuplicateLog {
+  original: SearchResult;
+  duplicate: SearchResult;
+  reason: 'url_match' | 'title_similarity' | null;
+  similarity?: number;
+  normalizedUrls?: { original: string; duplicate: string };
+}
+
+export interface DeduplicationOptions {
+  threshold: number;
+  enableUrlNormalization: boolean;
+  enableTitleMatching: boolean;
+  logDuplicates: boolean;
+  treatSubdomainsAsSame: boolean;
+  ignoreProtocol: boolean;
+  ignoreWww: boolean;
+  ignoreTrailingSlash: boolean;
+  ignoreQueryParams: boolean;
+  ignoreCaseInPath: boolean;
+}
+
+export const DEFAULT_DEDUPLICATION_OPTIONS: DeduplicationOptions = {
+  threshold: 0.8,
+  enableUrlNormalization: true,
+  enableTitleMatching: true,
+  logDuplicates: true,
+  treatSubdomainsAsSame: false,
+  ignoreProtocol: true,
+  ignoreWww: true,
+  ignoreTrailingSlash: true,
+  ignoreQueryParams: true,
+  ignoreCaseInPath: true
+};
+
 export class DeduplicationService {
-  constructor(private threshold: number = 0.8) {}
+  private options: DeduplicationOptions;
+  private duplicateLogs: DuplicateLog[] = [];
+
+  constructor(options?: Partial<DeduplicationOptions>) {
+    this.options = {
+      ...DEFAULT_DEDUPLICATION_OPTIONS,
+      ...options
+    };
+  }
 
   /**
    * Deduplicate search results based on title and URL similarity
@@ -17,12 +59,14 @@ export class DeduplicationService {
     results: SearchResult[];
     duplicatesRemoved: number;
     duplicateGroups: Array<{original: SearchResult, duplicates: SearchResult[]}>;
+    logs?: DuplicateLog[];
   } {
+    this.duplicateLogs = [];
     const uniqueResults: SearchResult[] = [];
     const duplicateGroups: Array<{original: SearchResult, duplicates: SearchResult[]}> = [];
     
     for (const result of results) {
-      const duplicate = this.findDuplicate(result, uniqueResults);
+      const { duplicate, reason, similarity, normalizedUrls } = this.findDuplicate(result, uniqueResults);
       
       if (duplicate) {
         // Find or create a duplicate group
@@ -34,6 +78,17 @@ export class DeduplicationService {
         }
         
         group.duplicates.push(result);
+        
+        // Log the duplicate if enabled
+        if (this.options.logDuplicates) {
+          this.duplicateLogs.push({
+            original: duplicate,
+            duplicate: result,
+            reason,
+            similarity,
+            normalizedUrls
+          });
+        }
       } else {
         uniqueResults.push(result);
       }
@@ -42,39 +97,103 @@ export class DeduplicationService {
     return {
       results: uniqueResults,
       duplicatesRemoved: results.length - uniqueResults.length,
-      duplicateGroups
+      duplicateGroups,
+      logs: this.options.logDuplicates ? this.duplicateLogs : undefined
     };
   }
   
   /**
    * Find a duplicate of the result in the existing results
    */
-  private findDuplicate(result: SearchResult, existingResults: SearchResult[]): SearchResult | null {
+  private findDuplicate(result: SearchResult, existingResults: SearchResult[]): {
+    duplicate: SearchResult | null;
+    reason: 'url_match' | 'title_similarity' | null;
+    similarity?: number;
+    normalizedUrls?: { original: string; duplicate: string };
+  } {
     for (const existingResult of existingResults) {
-      // Simple title similarity check
-      if (this.calculateSimilarity(result.title, existingResult.title) > this.threshold) {
-        return existingResult;
+      // Check URL similarity if enabled
+      if (this.options.enableUrlNormalization) {
+        const resultUrlNormalized = this.normalizeUrl(result.url);
+        const existingUrlNormalized = this.normalizeUrl(existingResult.url);
+        
+        if (resultUrlNormalized === existingUrlNormalized) {
+          return {
+            duplicate: existingResult,
+            reason: 'url_match',
+            normalizedUrls: {
+              original: existingUrlNormalized,
+              duplicate: resultUrlNormalized
+            }
+          };
+        }
       }
       
-      // URL similarity check (ignoring query parameters)
-      const resultUrlBase = this.getUrlBase(result.url);
-      const existingUrlBase = this.getUrlBase(existingResult.url);
-      
-      if (resultUrlBase === existingUrlBase) {
-        return existingResult;
+      // Check title similarity if enabled
+      if (this.options.enableTitleMatching && result.title && existingResult.title) {
+        const similarity = this.calculateSimilarity(result.title, existingResult.title);
+        if (similarity > this.options.threshold) {
+          return {
+            duplicate: existingResult,
+            reason: 'title_similarity',
+            similarity
+          };
+        }
       }
     }
     
-    return null;
+    return { duplicate: null, reason: null };
   }
   
   /**
-   * Get base URL without query parameters
+   * Advanced URL normalization
    */
-  private getUrlBase(url: string): string {
+  normalizeUrl(url: string): string {
     try {
       const urlObj = new URL(url);
-      return `${urlObj.protocol}//${urlObj.hostname}${urlObj.pathname}`;
+      let normalized = '';
+      
+      // Handle protocol
+      normalized = this.options.ignoreProtocol ? '//' : urlObj.protocol + '//';
+      
+      // Handle hostname (with www handling)
+      let hostname = urlObj.hostname;
+      if (this.options.ignoreWww && hostname.startsWith('www.')) {
+        hostname = hostname.substring(4);
+      }
+      
+      // Handle subdomains
+      if (this.options.treatSubdomainsAsSame) {
+        // Extract the main domain (last two parts)
+        const parts = hostname.split('.');
+        if (parts.length > 2) {
+          hostname = parts.slice(-2).join('.');
+        }
+      }
+      
+      normalized += hostname;
+      
+      // Handle pathname
+      let pathname = urlObj.pathname;
+      if (this.options.ignoreTrailingSlash && pathname.endsWith('/')) {
+        pathname = pathname.slice(0, -1);
+      }
+      
+      if (this.options.ignoreCaseInPath) {
+        pathname = pathname.toLowerCase();
+      }
+      
+      normalized += pathname;
+      
+      // Handle query parameters
+      if (!this.options.ignoreQueryParams && urlObj.search) {
+        // Sort query parameters to ensure consistent ordering
+        const params = new URLSearchParams(urlObj.search);
+        const sortedParams = new URLSearchParams([...params.entries()].sort());
+        normalized += '?' + sortedParams.toString();
+      }
+      
+      return normalized;
     } catch (e) {
       // If URL parsing fails, return original
       return url;
@@ -118,5 +237,29 @@ export class DeduplicationService {
     const maxLength = Math.max(aLower.length, bLower.length);
     
     return 1 - distance / maxLength;
+  }
+  
+  /**
+   * Get the current deduplication options
+   */
+  getOptions(): DeduplicationOptions {
+    return { ...this.options };
+  }
+  
+  /**
+   * Update deduplication options
+   */
+  updateOptions(options: Partial<DeduplicationOptions>): void {
+    this.options = {
+      ...this.options,
+      ...options
+    };
+  }
+  
+  /**
+   * Get logs from the last deduplication operation
+   */
+  getLogs(): DuplicateLog[] {
+    return [...this.duplicateLogs];
   }
 } 

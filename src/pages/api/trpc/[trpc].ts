@@ -1,5 +1,6 @@
 import { createNextApiHandler } from '@trpc/server/adapters/next';
 import { appRouter } from '@/server/trpc/router';
+import superjson from 'superjson';
 
 // Context factory
 const createContext = async ({ req, res }: any) => {
@@ -18,6 +19,7 @@ const createContext = async ({ req, res }: any) => {
 export default createNextApiHandler({
   router: appRouter,
   createContext,
+  transformer: superjson,
   onError:
     process.env.NODE_ENV === 'development'
       ? ({ path, error }) => {
