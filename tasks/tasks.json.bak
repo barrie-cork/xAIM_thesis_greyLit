@@ -1,0 +1,401 @@
+{
+  "tasks": [
+    {
+      "id": 1,
+      "title": "Project Setup and Environment Configuration",
+      "description": "Initialize project repository, configure development environment, and set up basic project structure",
+      "status": "done",
+      "dependencies": [],
+      "priority": "high",
+      "details": "Create a new project repository, configure development environment with necessary tools and dependencies. Set up folder structure following best practices. Include configuration for linting, formatting, and version control. Initialize package.json with required dependencies.",
+      "testStrategy": "Verify that the project builds successfully and all development tools work as expected. Run a smoke test to ensure the basic environment is functioning."
+    },
+    {
+      "id": 2,
+      "title": "Design System and UI Component Library",
+      "description": "Establish design system foundations and implement core UI component library",
+      "status": "done",
+      "dependencies": [
+        1
+      ],
+      "priority": "high",
+      "details": "Create a design system with color palette, typography, spacing, and component design specifications. Implement reusable UI components including buttons, inputs, cards, and navigation elements. Ensure components are responsive and accessible following WCAG guidelines.\n\nProgress:\n- ✅ Created accessible Input component with comprehensive features (loading, error, helper text, icons)\n- ✅ Created reusable Label component with required field and error state support\n- ✅ Created Select component with disabled options, loading state, and custom styling\n- ✅ Created Textarea component with character count, resize options, and validation\n- ✅ Created Checkbox component with indeterminate state and accessibility features\n- ✅ Created responsive Header component with mobile menu and accessibility features\n- ✅ Created responsive Sidebar component with collapsible state and nested navigation\n- ✅ Implemented Storybook documentation for all components\n- ✅ Added comprehensive test coverage for all components\n- ✅ Set up visual regression testing infrastructure with Storybook's addon-storyshots-puppeteer\n\nAll components are now complete and fully tested.",
+      "testStrategy": "Create visual regression tests for components. Implement accessibility testing with tools like Axe. Create storybook or equivalent documentation for component showcase and testing."
+    },
+    {
+      "id": 3,
+      "title": "Implement Authentication and User Management System",
+      "description": "Set up user authentication (login, registration, password reset) and session management using Supabase Auth.",
+      "status": "done",
+      "dependencies": [
+        1,
+        2
+      ],
+      "priority": "high",
+      "details": "Configure Supabase client (both client-side and server-side)\nSet up environment variables for Supabase URL and keys\nCreate auth helper functions/hooks\nImplement Login form component\nImplement Registration form component\nImplement Password reset flow components/pages\nCreate necessary auth pages (login, register, verify-email, auth-error, reset-password)\nSet up Supabase email templates\nImplement route protection using middleware\nHandle auth callbacks and session management\nAdd necessary UI elements (e.g., logout button)\nWrite tests for authentication flow (unit/integration)",
+      "testStrategy": "Verify user can register, receive confirmation email, verify email, login, request password reset, receive reset email, reset password, and logout. Test protected routes.",
+      "subtasks": []
+    },
+    {
+      "id": 4,
+      "title": "Database Schema and API Layer Implementation",
+      "status": "done",
+      "dependencies": [
+        1,
+        3
+      ],
+      "priority": "high",
+      "description": "Set up database schema, Prisma ORM, and tRPC API layer",
+      "details": "Database Setup:\n- Configure PostgreSQL in Supabase\n- Create Prisma schema for all tables\n- Set up database migrations\n- Configure indexes for performance\n- Implement Row Level Security (RLS)\n\nAPI Layer:\n- Set up tRPC server and router with auth context\n- Create type-safe procedures for user management\n- Implement search strategy and saved searches\n- Implement results storage and deduplication\n- Implement review tagging and collaboration\n- Set up error handling and logging\n- Create API documentation and testing\n\nData Models:\n- Implement all data models as specified in database_architecture.md\n- Set up proper relationships and foreign keys\n- Configure JSONB fields for flexible metadata\n- Implement data validation using Zod",
+      "testStrategy": "- Unit test all tRPC procedures\n- Test database operations and relationships\n- Verify type safety across the stack\n- Performance testing for complex queries\n- Test data validation and error handling",
+      "subtasks": [
+        {
+          "id": "4.1",
+          "title": "Set up tRPC Server and Base Configuration",
+          "status": "done",
+          "dependencies": [],
+          "description": "Initialize tRPC server with Next.js integration and configure base router with authentication context"
+        },
+        {
+          "id": "4.2",
+          "title": "Implement Authentication and User API",
+          "status": "done",
+          "dependencies": [],
+          "description": "Create tRPC procedures for user management, session handling, and profile operations"
+        },
+        {
+          "id": "4.3",
+          "title": "Implement Search Strategy API",
+          "status": "done",
+          "dependencies": [],
+          "description": "Create tRPC procedures for search request management, saved searches, and personal dashboards"
+        },
+        {
+          "id": "4.4",
+          "title": "Implement Search Results API",
+          "status": "done",
+          "dependencies": [],
+          "description": "Create tRPC procedures for result storage, retrieval, and deduplication logging"
+        },
+        {
+          "id": "4.5",
+          "title": "Implement Review System API",
+          "status": "done",
+          "dependencies": [],
+          "description": "Create tRPC procedures for review tagging, notes management, and collaborative review features"
+        },
+        {
+          "id": "4.6",
+          "title": "Implement Data Validation Layer",
+          "status": "done",
+          "dependencies": [],
+          "description": "Create Zod schemas for all data models and API inputs/outputs with proper validation rules"
+        },
+        {
+          "id": "4.7",
+          "title": "Set up Error Handling and Logging",
+          "status": "done",
+          "dependencies": [],
+          "description": "Implement global error handling, request logging, and proper error responses"
+        },
+        {
+          "id": "4.8",
+          "title": "Create API Documentation and Testing Suite",
+          "status": "done",
+          "dependencies": [],
+          "description": "Generate API documentation using tRPC-OpenAPI and implement comprehensive testing"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "title": "Search Strategy Builder Implementation",
+      "status": "completed",
+      "completionDate": "2024-07-10",
+      "dependencies": [
+        2,
+        4
+      ],
+      "priority": "high",
+      "details": "Create the search strategy builder component:\n\nCore Features:\n- Implement structured concept input (Population, Interest, Context)\n- Create MeSH term integration:\n  - Set up local MeSH dataset\n  - Implement term expansion algorithm\n  - Create efficient lookup system\n- Build query builder interface\n- Implement search engine selection\n- Add filetype filters\n- Create clinical guideline terms toggle\n- Implement search strategy saving\n\nTechnical Implementation:\n- Set up MeSH data storage and access\n- Create efficient term suggestion system\n- Implement query validation\n- Build search preview functionality\n- Create search history tracking",
+      "testStrategy": "- Test MeSH term expansion accuracy\n- Verify query building logic\n- Test search strategy saving/loading\n- Performance test term suggestions\n- Validate generated queries",
+      "subtasks": [
+        {
+          "id": "5.1",
+          "title": "MeSH Dataset Setup and Integration",
+          "status": "pending",
+          "dependencies": [],
+          "description": "Configure Supabase storage for MeSH dataset, import and preprocess MeSH data, create efficient indexing for term lookup, build API endpoints for term retrieval, and implement term expansion algorithm with synonyms"
+        },
+        {
+          "id": "5.2",
+          "title": "Search Concept UI Components",
+          "status": "pending",
+          "dependencies": [],
+          "description": "Create UI components for concept input (Population, Interest, Context), implement form validation with Zod schemas, build term suggestion UI with selection/deselection, create custom term input functionality, and add responsive styling with Tailwind CSS"
+        },
+        {
+          "id": "5.3",
+          "title": "Query Builder Interface",
+          "status": "pending",
+          "dependencies": [],
+          "description": "Design and implement the query builder UI, create search engine selection components, build filetype filter options (PDF, DOC, DOCX), implement clinical guideline terms toggle, and add trusted domains filter input"
+        },
+        {
+          "id": "5.4",
+          "title": "Search Preview and Validation",
+          "status": "pending",
+          "dependencies": [],
+          "description": "Create real-time query preview component, implement query validation logic, build search string formatting, create testing framework for query generation, and add visual feedback for search validity"
+        },
+        {
+          "id": "5.5",
+          "title": "Search Strategy Management",
+          "status": "pending",
+          "dependencies": [],
+          "description": "Implement search strategy saving functionality, create search history tracking in Supabase, build UI for saved searches management, implement search loading and editing, and add export functionality for search strategies"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "title": "SERP Execution and Results Management",
+      "description": "Implement search execution and results processing system",
+      "status": "in-progress",
+      "dependencies": [
+        4,
+        5
+      ],
+      "priority": "high",
+      "details": "Create the search execution and results management system:\n\nSERP Execution:\n- Implement API integration (Serper, SerpAPI)\n- Create query execution system with pagination\n- Build result parsing and normalization\n- Implement rate limiting and error handling\n- Set up result storage and enrichment\n\nResults Management:\n- Create deduplication system:\n  - URL normalization\n  - Fuzzy title matching\n  - Duplicate logging\n- Implement result filtering\n- Create result enrichment pipeline\n- Build result storage and caching\n\nTechnical Requirements:\n- Use string-similarity for fuzzy matching\n- Implement efficient pagination\n- Create proper error handling\n- Set up result caching\n- Implement proper logging",
+      "testStrategy": "- Test API integration reliability\n- Verify deduplication accuracy\n- Test pagination handling\n- Performance test result processing\n- Validate error handling",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Implement Third-Party SERP API Integration with Rate Limiting",
+          "description": "Set up integration with search engine API providers (Serper, SerpAPI) including authentication, request formatting, and rate limiting mechanisms",
+          "dependencies": [],
+          "details": "Implementation steps:\n1. Create a `SearchProvider` interface defining standard methods for search execution\n2. Implement provider-specific classes for Serper and SerpAPI that implement this interface\n3. Set up API authentication and configuration management\n4. Implement a rate limiting mechanism using token bucket algorithm\n5. Add error handling for API failures (retry logic, fallback providers)\n6. Implement proper logging for all API interactions\n7. Create unit tests with mocked API responses\n8. Test with real API credentials in staging environment\n\nTesting approach:\n- Unit tests with mocked responses for each provider\n- Integration tests verifying rate limiting behavior\n- Error case simulations to verify proper handling",
+          "status": "done",
+          "parentTaskId": 6
+        },
+        {
+          "id": 2,
+          "title": "Build Result Parsing and Normalization System",
+          "description": "Create a system to parse and normalize search results from different providers into a standardized format with pagination support",
+          "dependencies": [
+            1
+          ],
+          "details": "Implementation steps:\n1. Define a standardized `SearchResult` data structure\n2. Implement provider-specific result parsers that convert raw API responses to the standard format\n3. Create a normalization pipeline to standardize fields (titles, URLs, snippets)\n4. Implement URL normalization (handle tracking parameters, protocol differences)\n5. Add support for pagination and result merging\n6. Create a query execution system that handles pagination across multiple requests\n7. Implement error handling for malformed results\n\nTesting approach:\n- Unit tests with sample responses from each provider\n- Tests for URL normalization with various edge cases\n- Pagination tests with simulated multi-page results\n- Test with actual search queries to verify real-world behavior",
+          "status": "done",
+          "parentTaskId": 6
+        },
+        {
+          "id": 3,
+          "title": "Develop Result Deduplication System with Fuzzy Matching",
+          "description": "Create a deduplication system that identifies and handles duplicate search results using URL normalization and fuzzy title matching",
+          "dependencies": [
+            2
+          ],
+          "details": "Implementation steps:\n1. Integrate the string-similarity library for fuzzy matching\n2. Implement advanced URL normalization (canonical form, parameter removal)\n3. Create a fuzzy title matching algorithm with configurable threshold\n4. Develop a deduplication pipeline that processes search results\n5. Add a duplicate logging system to track identified duplicates\n6. Implement performance optimizations for large result sets\n7. Create configuration options for deduplication strictness\n\nTesting approach:\n- Unit tests with known duplicate sets\n- Performance tests with large result sets\n- Threshold testing to find optimal fuzzy matching settings\n- Test with real search results to verify accuracy\n- Edge case testing (very similar but different results)",
+          "status": "done",
+          "parentTaskId": 6
+        },
+        {
+          "id": 4,
+          "title": "Implement Result Storage and Caching System",
+          "description": "Create a storage and caching system for search results to improve performance and reduce API calls",
+          "dependencies": [
+            2
+          ],
+          "details": "Implementation steps:\n1. Design a database schema for storing search results\n2. Implement a caching layer with configurable TTL (time-to-live)\n3. Create cache invalidation mechanisms\n4. Develop a query fingerprinting system to identify identical searches\n5. Implement incremental result storage (append new results to existing ones)\n6. Add metrics collection for cache hit/miss rates\n7. Create a cache warming strategy for common queries\n8. Implement storage cleanup for outdated results\n\nTesting approach:\n- Unit tests for cache operations\n- Performance tests for read/write operations\n- Concurrency tests for simultaneous cache access\n- Integration tests with the search execution system\n- Verify cache invalidation works correctly",
+          "status": "pending",
+          "parentTaskId": 6
+        },
+        {
+          "id": 5,
+          "title": "Build Result Filtering and Enrichment Pipeline",
+          "description": "Create a pipeline for filtering and enriching search results with additional data and relevance scoring",
+          "dependencies": [
+            3,
+            4
+          ],
+          "details": "Implementation steps:\n1. Implement configurable filtering rules (domain blocking, keyword filtering)\n2. Create a result enrichment pipeline architecture\n3. Develop metadata enrichment modules (readability scores, content type detection)\n4. Implement relevance scoring algorithms\n5. Create a plugin system for custom enrichment modules\n6. Add result ranking and sorting capabilities\n7. Implement performance monitoring for enrichment operations\n8. Create an API for accessing filtered and enriched results\n\nTesting approach:\n- Unit tests for individual filters and enrichment modules\n- Integration tests for the complete pipeline\n- Performance testing with large result sets\n- A/B testing different enrichment strategies\n- Verify enriched data accuracy with known test cases",
+          "status": "pending",
+          "parentTaskId": 6
+        },
+        {
+          "id": 6,
+          "title": "Implement Search API Integration",
+          "description": "Set up API clients for Serper and SerpAPI with proper authentication, request formatting, and error handling",
+          "dependencies": [],
+          "details": "Implementation details:\n1. Create API client classes for Serper and SerpAPI with configuration options\n2. Implement authentication methods for each service\n3. Build request formatters to convert search parameters to API-specific formats\n4. Create response handlers to extract raw results\n5. Implement rate limiting with configurable thresholds\n6. Set up comprehensive error handling with appropriate retry logic\n7. Add detailed logging for API interactions\n8. Create unit tests with mock responses for each API\n9. Document API client usage with examples\n\nTesting approach:\n- Unit test each API client with mocked responses\n- Create integration tests with API keys for dev environment\n- Test rate limiting by simulating rapid requests\n- Verify error handling with intentionally malformed requests",
+          "status": "pending",
+          "parentTaskId": 6
+        },
+        {
+          "id": 7,
+          "title": "Build Result Parsing and Normalization System",
+          "description": "Create a system to parse, normalize and structure search results from different API sources into a unified format",
+          "dependencies": [
+            1
+          ],
+          "details": "Implementation details:\n1. Define a standardized result schema that accommodates all possible fields\n2. Create parser classes for each API response format\n3. Implement field mapping from API-specific formats to the standard schema\n4. Build normalization functions for URLs, titles, snippets, and dates\n5. Handle special result types (featured snippets, knowledge panels, etc.)\n6. Implement pagination tracking and next page token management\n7. Add validation to ensure all normalized results conform to the schema\n8. Create utility functions for result transformation\n\nTesting approach:\n- Unit test parsers with sample API responses\n- Test normalization with edge cases (malformed URLs, missing fields)\n- Verify schema validation catches malformed results\n- Test with real API responses to ensure complete coverage",
+          "status": "pending",
+          "parentTaskId": 6
+        },
+        {
+          "id": 8,
+          "title": "Implement Result Deduplication System",
+          "description": "Create a deduplication system that identifies and removes duplicate search results based on URL normalization and fuzzy title matching",
+          "dependencies": [
+            2
+          ],
+          "details": "Implementation details:\n1. Implement URL normalization functions (remove tracking parameters, standardize protocols, handle redirects)\n2. Integrate string-similarity library for fuzzy title matching\n3. Create configurable similarity thresholds for title matching\n4. Build a deduplication pipeline that processes normalized results\n5. Implement logging of identified duplicates with reasons\n6. Create metrics collection for deduplication rate monitoring\n7. Design efficient algorithms to minimize processing time for large result sets\n8. Add options to preserve certain duplicate types when needed\n\nTesting approach:\n- Unit test URL normalization with various URL formats\n- Test fuzzy matching with similar titles at different thresholds\n- Benchmark performance with large result sets\n- Verify edge cases like empty fields and special characters",
+          "status": "pending",
+          "parentTaskId": 6
+        },
+        {
+          "id": 9,
+          "title": "Create Result Filtering and Enrichment Pipeline",
+          "description": "Build a system to filter results based on criteria and enrich them with additional metadata",
+          "dependencies": [
+            3
+          ],
+          "details": "Implementation details:\n1. Implement configurable filtering rules (by domain, content type, date, etc.)\n2. Create a rule engine to apply filters to result sets\n3. Build content classification system to categorize results\n4. Implement metadata enrichment to add information like reading time, content type\n5. Create domain authority integration to score result quality\n6. Add sentiment analysis for result snippets\n7. Implement keyword highlighting in snippets\n8. Create a pipeline architecture to process results through multiple enrichment stages\n9. Add performance monitoring for each enrichment step\n\nTesting approach:\n- Unit test individual filters with sample results\n- Test the rule engine with complex filter combinations\n- Verify enrichment accuracy with known content types\n- Measure performance impact of each enrichment step",
+          "status": "pending",
+          "parentTaskId": 6
+        },
+        {
+          "id": 10,
+          "title": "Implement Result Storage and Caching System",
+          "description": "Build a system to store, cache, and retrieve search results efficiently",
+          "dependencies": [
+            4
+          ],
+          "details": "Implementation details:\n1. Design a database schema for storing processed search results\n2. Implement a caching layer with configurable TTL (Time To Live)\n3. Create cache invalidation strategies based on query parameters\n4. Build query fingerprinting to identify identical searches\n5. Implement efficient pagination for cached results\n6. Create a storage service with CRUD operations for results\n7. Add compression for large result sets\n8. Implement background jobs for cache maintenance\n9. Create metrics for cache hit rates and storage usage\n10. Add export functionality for result sets\n\nTesting approach:\n- Unit test storage operations with mock data\n- Test cache performance with repeated queries\n- Verify cache invalidation works correctly\n- Benchmark storage and retrieval with large result sets\n- Test concurrent access patterns",
+          "status": "pending",
+          "parentTaskId": 6
+        },
+        {
+          "id": 11,
+          "title": "Implement Search API Integration and Query Execution",
+          "description": "Set up API clients for search providers (Serper, SerpAPI) and implement a query execution system with pagination support",
+          "dependencies": [],
+          "details": "Implementation steps:\n1. Create API client classes for Serper and SerpAPI with configuration options\n2. Implement authentication and request handling for each provider\n3. Build a query execution system that supports:\n   - Basic search parameters (query, num_results, page)\n   - Pagination through search results\n   - Provider-specific parameter handling\n4. Implement rate limiting using a token bucket algorithm\n5. Create comprehensive error handling for API failures\n6. Set up logging for all API interactions\n\nTesting approach:\n- Unit tests for API client configuration\n- Mock API responses for testing error handling\n- Integration tests with sandbox/test API keys\n- Test rate limiting behavior",
+          "status": "pending",
+          "parentTaskId": 6
+        },
+        {
+          "id": 12,
+          "title": "Build Result Parsing and Normalization System",
+          "description": "Create a system to parse and normalize search results from different providers into a standard format",
+          "dependencies": [
+            11
+          ],
+          "details": "Implementation steps:\n1. Define a standardized result schema to represent search results\n2. Implement provider-specific parsers to convert raw API responses to the standard format\n3. Create normalization functions for common fields:\n   - Title normalization (trim, standardize capitalization)\n   - URL normalization (handle protocols, trailing slashes, query params)\n   - Description cleaning and formatting\n4. Add metadata enrichment (source provider, timestamp, query info)\n5. Implement validation to ensure all required fields are present\n\nTesting approach:\n- Unit tests for each parser with sample API responses\n- Test normalization with edge cases (malformed URLs, missing fields)\n- Integration tests combining query execution and parsing\n- Validation tests to ensure schema compliance",
+          "status": "pending",
+          "parentTaskId": 6
+        },
+        {
+          "id": 13,
+          "title": "Implement Result Deduplication System",
+          "description": "Create a system to identify and handle duplicate search results using URL normalization and fuzzy title matching",
+          "dependencies": [
+            12
+          ],
+          "details": "Implementation steps:\n1. Implement advanced URL normalization:\n   - Remove tracking parameters\n   - Handle URL variants (www vs non-www, http vs https)\n   - Canonical URL detection\n2. Integrate string-similarity library for fuzzy title matching:\n   - Configure similarity thresholds\n   - Implement efficient comparison algorithm\n3. Create a deduplication pipeline that:\n   - Identifies exact URL matches\n   - Finds similar titles when URLs differ\n   - Logs duplicate information\n4. Implement a merge strategy for combining information from duplicates\n5. Add configuration options for deduplication sensitivity\n\nTesting approach:\n- Unit tests for URL normalization with various URL formats\n- Test fuzzy matching with similar and dissimilar titles\n- Performance testing with large result sets\n- Integration tests with the full result processing pipeline",
+          "status": "pending",
+          "parentTaskId": 6
+        },
+        {
+          "id": 14,
+          "title": "Build Result Filtering and Enrichment Pipeline",
+          "description": "Create a system to filter search results based on configurable criteria and enrich results with additional information",
+          "dependencies": [
+            13
+          ],
+          "details": "Implementation steps:\n1. Implement configurable filtering system:\n   - Domain/source filtering (blocklist/allowlist)\n   - Content type filtering\n   - Date/freshness filtering\n   - Custom filter rule support\n2. Create result enrichment pipeline:\n   - Extract and normalize dates\n   - Detect content types\n   - Extract key entities or keywords\n   - Add relevance scoring\n3. Implement filter chain execution with logging\n4. Create extension points for custom enrichment plugins\n5. Add performance monitoring for filtering operations\n\nTesting approach:\n- Unit tests for each filter type\n- Test enrichment with various result types\n- Performance testing of the full pipeline\n- Integration tests with previous components",
+          "status": "pending",
+          "parentTaskId": 6
+        },
+        {
+          "id": 15,
+          "title": "Implement Result Storage and Caching System",
+          "description": "Create a system to store processed search results and implement caching to improve performance and reduce API calls",
+          "dependencies": [
+            14
+          ],
+          "details": "Implementation steps:\n1. Design and implement result storage schema:\n   - Support for full result objects\n   - Query metadata storage\n   - Timestamp and expiration handling\n2. Build a caching layer with:\n   - Time-based expiration\n   - Cache invalidation strategies\n   - Memory and persistent cache options\n3. Implement cache lookup before API calls\n4. Create a query fingerprinting system to identify similar queries\n5. Add cache statistics and monitoring\n6. Implement cache maintenance operations (cleanup, optimization)\n\nTesting approach:\n- Unit tests for storage operations\n- Cache hit/miss testing\n- Performance benchmarks\n- Integration tests with the full search execution pipeline\n- Test cache invalidation and expiration",
+          "status": "pending",
+          "parentTaskId": 6
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "title": "Review Interface Implementation",
+      "description": "Create the review interface for screening and tagging results",
+      "status": "pending",
+      "dependencies": [
+        2,
+        6
+      ],
+      "priority": "medium",
+      "details": "Implement the review interface:\n\nFeatures:\n- Create result screening interface\n- Implement tagging system (Include, Exclude, Maybe)\n- Add exclusion reason tracking\n- Create note-taking functionality\n- Implement progress tracking\n- Add filtering and sorting\n- Create auto-save functionality\n\nTechnical Implementation:\n- Build efficient result loading\n- Implement real-time state updates\n- Create progress persistence\n- Set up proper error handling\n- Implement keyboard shortcuts",
+      "testStrategy": "- Test tagging functionality\n- Verify auto-save reliability\n- Test filtering and sorting\n- Validate progress tracking\n- Test keyboard shortcuts"
+    },
+    {
+      "id": 8,
+      "title": "Reporting and Export System",
+      "description": "Implement PRISMA-aligned reporting and export functionality",
+      "status": "pending",
+      "dependencies": [
+        6,
+        7
+      ],
+      "priority": "medium",
+      "details": "Create the reporting and export system:\n\nFeatures:\n- Implement PRISMA 2020 metrics generation\n- Create export functionality for:\n  - Markdown format\n  - HTML format\n  - CSV format\n- Include all required metrics:\n  - Search configurations\n  - Result statistics\n  - Screening decisions\n  - URLs and notes\n\nTechnical Implementation:\n- Build metric calculation system\n- Create export formatters\n- Implement proper error handling\n- Set up export file storage\n- Create export progress tracking",
+      "testStrategy": "- Verify metric calculations\n- Test all export formats\n- Validate large export handling\n- Test error scenarios\n- Verify export completeness"
+    },
+    {
+      "id": 9,
+      "title": "Email Notifications and Sharing",
+      "description": "Implement email notifications and report sharing",
+      "status": "pending",
+      "dependencies": [
+        3,
+        8
+      ],
+      "priority": "low",
+      "details": "Implement email functionality:\n\nFeatures:\n- Set up Resend email service\n- Create email templates for:\n  - Account verification\n  - Password reset\n  - Report sharing\n- Implement email preferences\n- Create sharing functionality\n\nTechnical Implementation:\n- Configure Resend integration\n- Build email template system\n- Implement proper error handling\n- Create email tracking\n- Set up email queue management",
+      "testStrategy": "- Test email delivery\n- Verify template rendering\n- Test email preferences\n- Validate error handling\n- Test email queuing"
+    },
+    {
+      "id": 10,
+      "title": "Final Testing and Deployment",
+      "description": "Comprehensive testing and deployment preparation",
+      "status": "pending",
+      "dependencies": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9
+      ],
+      "priority": "high",
+      "details": "Prepare for production deployment:\n\nTesting:\n- Run comprehensive test suite\n- Perform security audit\n- Conduct performance testing\n- Complete accessibility testing\n\nDeployment:\n- Set up production environment\n- Configure CI/CD pipeline\n- Create backup strategy\n- Prepare rollback procedures\n- Finalize documentation\n\nOptimization:\n- Perform code optimization\n- Implement caching strategy\n- Configure monitoring\n- Set up error tracking",
+      "testStrategy": "- Execute full test suite\n- Perform load testing\n- Conduct security testing\n- Test backup/restore\n- Verify monitoring"
+    }
+  ],
+  "metadata": {
+    "projectName": "Grey Literature Search App",
+    "totalTasks": 10,
+    "sourceFile": "project_docs/PRD.md",
+    "generatedAt": "2024-04-06"
+  }
+}

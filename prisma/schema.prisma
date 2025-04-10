@@ -71,6 +71,9 @@ model DuplicateLog {
   duplicateUrl     String?       @map("duplicate_url")
   searchEngine     String?       @map("search_engine")
   reason           String?
+  similarityScore  Float?        @map("similarity_score")
+  matchDetails     Json?         @map("match_details")
+  mergeStrategy    String?       @map("merge_strategy")
   timestamp        DateTime      @default(now())
   originalResult   SearchResult? @relation("OriginalResult", fields: [originalResultId], references: [id])
 
@@ -182,4 +185,15 @@ model MeshConceptRelation {
   sourceConcept       MeshConcept @relation(fields: [sourceConceptId], references: [id], onDelete: Cascade)
   
   @@unique([sourceConceptId, targetConceptId])
+}
+
+model CacheEntry {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     Json
+  expiresAt DateTime? @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("cache_entries")
 }

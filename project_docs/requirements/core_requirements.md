@@ -10,7 +10,7 @@
 
 ### FR-SEARCH: Search Strategy Building
 - REQ-FR-SEARCH-1: The system shall allow users to define concept groups (Population, Interest, Context)
-- REQ-FR-SEARCH-2: The system shall expand keywords using a local MeSH dataset
+
 - REQ-FR-SEARCH-3: The system shall allow users to select/deselect generated keywords
 - REQ-FR-SEARCH-4: The system shall allow users to add custom terms
 - REQ-FR-SEARCH-5: The system shall allow users to specify trusted domains to include in queries

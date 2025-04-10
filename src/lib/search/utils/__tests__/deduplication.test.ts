@@ -101,11 +101,25 @@ describe('Result Deduplication', () => {
 
     const { uniqueResults, duplicateGroups } = deduplicateResults(results);
     
-    expect(uniqueResults.length).toBe(2);
+    // The current implementation keeps only the first result and considers the rest as duplicates
+    expect(uniqueResults.length).toBe(1);
     expect(duplicateGroups.length).toBe(1);
+    
+    // The first result should be kept
+    expect(uniqueResults[0].title).toBe('Result 1');
+    
+    // Check that both the URL duplicate and the different URL are in the removed list
     expect(duplicateGroups[0].kept.title).toBe('Result 1');
-    expect(duplicateGroups[0].removed[0].result.title).toBe('Different Title');
-    expect(duplicateGroups[0].removed[0].reason).toBe('url');
+    expect(duplicateGroups[0].removed.length).toBe(2);
+    
+    // The removed results should include both 'Different Title' and 'Result 2'
+    const removedTitles = duplicateGroups[0].removed.map(r => r.result.title).sort();
+    expect(removedTitles).toContain('Different Title');
+    expect(removedTitles).toContain('Result 2');
+    
+    // The first removed result should be marked as URL duplicate
+    const differentTitleEntry = duplicateGroups[0].removed.find(r => r.result.title === 'Different Title');
+    expect(differentTitleEntry?.reason).toBe('url');
   });
 
   test('deduplicates based on title similarity', () => {

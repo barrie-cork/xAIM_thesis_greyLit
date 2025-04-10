@@ -18,8 +18,13 @@ export function normalizeUrl(url: string): string {
     
     // Clean path - remove trailing slash
     let path = urlObj.pathname;
-    if (path.endsWith('/') && path.length > 1) {
+    if (path.endsWith('/') && path !== '/') {
       path = path.slice(0, -1);
+    }
+    
+    // If path is just "/", make it empty for cleaner normalized URLs
+    if (path === '/') {
+      path = '';
     }
     
     // Normalize path to lowercase in case of case-insensitive servers
@@ -160,20 +165,28 @@ export function deduplicateResults(
   const normalizedUrls = new Map<string, number>();
   
   // Process each result
-  results.forEach(result => {
-    // Normalize the URL
-    const normalizedUrl = normalizeUrl(result.url);
+  for (let i = 0; i < results.length; i++) {
+    const result = results[i];
     
     // Check if current domain should be ignored for deduplication
     try {
       const domain = new URL(result.url).hostname;
-      if (ignoredDomains.some(ignoredDomain => domain.includes(ignoredDomain))) {
+      const shouldIgnore = ignoredDomains.some(ignoredDomain => domain.includes(ignoredDomain));
+      
+      if (shouldIgnore) {
+        // Add to unique results and skip deduplication for ignored domains
         uniqueResults.push(result);
-        return; // Skip deduplication for ignored domains
+        // Store the normalized URL to prevent other results from being marked as duplicates of this one
+        const normalizedUrl = normalizeUrl(result.url);
+        normalizedUrls.set(normalizedUrl, uniqueResults.length - 1);
+        continue;
       }
     } catch (e) {
       // If URL parsing fails, continue with deduplication
     }
+    
+    // Normalize the URL
+    const normalizedUrl = normalizeUrl(result.url);
     
     // Check for exact URL match first
     if (normalizedUrls.has(normalizedUrl)) {
@@ -202,7 +215,7 @@ export function deduplicateResults(
         });
       }
       
-      return; // Skip this result as it's a duplicate
+      continue; // Skip this result as it's a duplicate
     }
     
     // If not exact URL match, check for title similarity
@@ -213,6 +226,15 @@ export function deduplicateResults(
         try {
           const existingDomain = new URL(existingResult.url).hostname;
           const currentDomain = new URL(result.url).hostname;
+          
+          // Check if either domain should be ignored for title-based deduplication
+          if (ignoredDomains.some(
+              ignoredDomain => 
+                existingDomain.includes(ignoredDomain) || 
+                currentDomain.includes(ignoredDomain)
+            )) {
+            return false; // Don't consider as duplicate if either domain is ignored
+          }
           
           // If domains are completely different, still check title similarity
           // but with a higher threshold for cross-domain duplicates
@@ -267,17 +289,14 @@ export function deduplicateResults(
           });
         }
         
-        return; // Skip this result as it's a duplicate
+        continue; // Skip this result as it's a duplicate
       }
     }
     
-    // If we reached here, this is a unique result
-    normalizedUrls.set(normalizedUrl, uniqueResults.length);
+    // If we get here, the result is unique
     uniqueResults.push(result);
-  });
+    normalizedUrls.set(normalizedUrl, uniqueResults.length - 1);
+  }
   
-  return {
-    uniqueResults,
-    duplicateGroups
-  };
+  return { uniqueResults, duplicateGroups };
 } 

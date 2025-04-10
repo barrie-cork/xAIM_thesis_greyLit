@@ -1,7 +1,9 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { SearchService, DEFAULT_SEARCH_CONFIG, SearchProviderType } from '@/lib/search';
+import { SearchService, DEFAULT_SEARCH_CONFIG, SearchProviderType, SearchResponse } from '@/lib/search';
 import { DeduplicationService, SearchResult as DeduplicationSearchResult } from '@/lib/search/deduplication';
-import { SearchResult } from '@/lib/search/types';
+import { SearchResult as ApiSearchResult } from '@/lib/search/types';
+import { convertSearchResult, SearchResultTypeMap } from '@/lib/search/common-types';
+import { toDeduplicationResult } from '@/lib/search/result-resolver';
 
 // Define types for duplicate groups
 interface DuplicateGroup {
@@ -15,9 +17,27 @@ const batchSearches = new Map<string, string[]>();
 // Add a debug option for easier troubleshooting
 const DEBUG = process.env.NODE_ENV === 'development';
 
+/**
+ * API handler for performing searches.
+ * Accepts POST requests with search parameters in the body.
+ * 
+ * Request Body Parameters:
+ * - query: (string) The primary search query.
+ * - maxResults?: (number, default: 20) Maximum number of results to aim for.
+ * - deduplication?: (boolean, default: true) Whether to enable deduplication via SearchService.
+ *                      Fine-grained options are configured within SearchService.
+ * - batchId?: (string) Identifier for grouping related searches processed sequentially.
+ * - batchIndex?: (number) The 0-based index of this query within its batch.
+ * - batchQueries?: (string[]) Array of all queries in the batch (only needed for the first request with a new batchId).
+ * - useGoogleScholar?: (boolean, default: false) Shortcut to add 'site:scholar.google.com' to the query.
+ * - query_type?: ('broad' | 'scholar' | 'domain', default: 'broad') Modifies query for specific targets.
+ * - domains?: (string | string[]) Domain(s) to restrict search to when query_type is 'domain'.
+ * - includeDuplicates?: (boolean, default: false) If true, performs a second raw search to find and include
+ *                           details about removed duplicates in the response metadata.
+ */
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse
+  res: NextApiResponse<SearchResponse[] | { message: string }>
 ) {
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Method not allowed' });
@@ -60,7 +80,7 @@ export default async function handler(
 
     // Initialize services
     const searchService = new SearchService(DEFAULT_SEARCH_CONFIG);
-    const deduplicationService = deduplication ? new DeduplicationService() : null;
+    const deduplicationServiceForDetails = includeDuplicates && deduplication ? new DeduplicationService() : null;
 
     // Determine which provider to use (Google Scholar or default)
     const providers = [SearchProviderType.SERPER]; // Default to Serper
@@ -99,7 +119,7 @@ export default async function handler(
       query: modifiedQuery,
       maxResults: Number(maxResults),
       providers,
-      deduplication: deduplicationService ? true : false
+      deduplication: deduplication
     });
     
     if (DEBUG) {
@@ -108,10 +128,10 @@ export default async function handler(
     
     // Capture duplicate information if requested and available
     const duplicateGroups: DuplicateGroup[] = [];
-    if (includeDuplicates && deduplicationService) {
+    if (includeDuplicates && deduplicationServiceForDetails) {
       try {
         // Get raw results without deduplication to compare
-        const rawResults = await searchService.search({
+        const rawResultsResponse = await searchService.search({
           query: modifiedQuery,
           maxResults: Number(maxResults),
           providers,
@@ -119,23 +139,15 @@ export default async function handler(
         });
         
         // Extract the actual results
-        const allRawResults = rawResults.flatMap(r => r.results);
+        const allRawResults = rawResultsResponse.flatMap(r => r.results);
         
-        // Map search results to deduplication service format
-        const formattedResults: DeduplicationSearchResult[] = allRawResults.map((result, index) => ({
-          title: result.title || '',
-          url: result.url || '',
-          snippet: result.snippet || '',
-          position: index,
-          provider: result.searchEngine || 'unknown',
-          metadata: { 
-            searchEngine: result.searchEngine,
-            timestamp: result.timestamp
-          }
-        }));
+        // Map search results to deduplication service format using the utility function
+        const formattedResults: DeduplicationSearchResult[] = allRawResults.map((result, index) => 
+          toDeduplicationResult(result, index)
+        );
         
         // Run deduplication to get duplicate groups
-        const deduplicationResult = deduplicationService.deduplicate(formattedResults);
+        const deduplicationResult = deduplicationServiceForDetails.deduplicate(formattedResults);
         
         // Store duplicates info
         duplicateGroups.push(...deduplicationResult.duplicateGroups);

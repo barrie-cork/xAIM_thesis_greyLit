@@ -9,6 +9,8 @@ The *Grey Literature Search App* enables researchers to systematically search, s
 - **Domain-Specific Queries**: Target specific domains like healthquality.va.gov or nice.org.uk
 - **Advanced Result Handling**: Automatic deduplication and organization of search results
 - **Clinical Guideline Terms**: Include specialized terminology in your searches
+- **Result Caching System**: Efficient caching of search results to reduce API calls and improve performance
+- **Duplicate Detection**: Advanced detection and management of duplicate search results
 
 ## Getting Started
 
@@ -107,3 +109,55 @@ The *Grey Literature Search App* enables researchers to systematically search, s
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Advanced Features
+
+### Result Storage and Caching
+
+The application includes a sophisticated result storage and caching system that:
+
+1. **Reduces API Calls**: Caches search results to minimize expensive API calls to search providers
+2. **Improves Performance**: Serves cached results for identical queries instantly
+3. **Intelligent Fingerprinting**: Identifies identical searches using configurable query fingerprinting
+4. **Tiered Caching**: Uses both in-memory and database storage for optimal performance
+5. **Time-to-Live (TTL)**: Configurable cache expiration to ensure fresh results
+6. **Cache Statistics**: Tracks cache hit/miss rates and performance metrics
+
+To configure the caching system, modify the `CacheOptions` settings in your environment:
+
+```typescript
+// Default cache options
+{
+  ttl: 3600, // 1 hour cache lifetime in seconds
+  enabled: true,
+  fingerprinting: {
+    ignoreCase: true,
+    normalizeWhitespace: true,
+    includeFilters: true
+  }
+}
+```
+
+#### Cache Maintenance
+
+To maintain optimal performance, a cache cleanup script is provided that removes outdated cache entries:
+
+```bash
+# Run cache cleanup with default 7-day retention
+npx ts-node src/scripts/cache-cleanup.ts
+
+# Specify a custom retention period (in days)
+npx ts-node src/scripts/cache-cleanup.ts 14
+```
+
+For production environments, you can set up a scheduled job (e.g., cron) to run this script regularly.
+
+### Deduplication System
+
+The application includes an advanced deduplication system that:
+
+1. **URL Normalization**: Identifies duplicate results with different URL formats
+2. **Weighted Similarity Scoring**: Uses title (50%), snippet (30%), and URL (20%) to detect near-duplicates
+3. **Configurable Merge Strategies**: Conservative or comprehensive merging of duplicate information
+4. **Duplicate Logging**: Tracks detailed information about detected duplicates
+5. **Performance Optimization**: Efficiently processes large result sets with minimal overhead

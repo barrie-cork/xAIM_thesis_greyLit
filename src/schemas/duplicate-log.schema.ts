@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { jsonSchema } from './common';
 
 /**
  * Duplicate Log schema validation
@@ -12,6 +13,9 @@ export const duplicateLogSchema = z.object({
   duplicate_url: z.string().url(),
   search_engine: z.string().nullable(),
   reason: z.string().nullable(),
+  similarity_score: z.number().min(0).max(1).nullable(),
+  match_details: jsonSchema.nullable(),
+  merge_strategy: z.string().nullable(),
   timestamp: z.string().datetime(),
 });
 
@@ -23,6 +27,9 @@ export const duplicateLogCreateSchema = duplicateLogSchema
   .extend({
     search_engine: z.string().nullable().optional(),
     reason: z.string().nullable().optional(),
+    similarity_score: z.number().min(0).max(1).nullable().optional(),
+    match_details: jsonSchema.nullable().optional(),
+    merge_strategy: z.string().nullable().optional(),
   });
 
 // Schema for client input (camelCase version for frontend)
@@ -32,6 +39,9 @@ export const duplicateLogInputSchema = z.object({
   duplicateUrl: z.string().url(),
   searchEngine: z.string().optional().nullable(),
   reason: z.string().optional().nullable(),
+  similarityScore: z.number().min(0).max(1).optional().nullable(),
+  matchDetails: jsonSchema.optional().nullable(),
+  mergeStrategy: z.string().optional().nullable(),
 });
 
 // Schema for retrieving duplicates for an original result

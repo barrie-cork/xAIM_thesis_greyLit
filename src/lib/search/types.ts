@@ -2,6 +2,8 @@
  * Types for search API integration
  */
 
+import { CoreSearchResult } from './common-types';
+
 // Search query parameters
 export interface SearchParams {
   query: string;
@@ -22,10 +24,7 @@ export enum FileType {
 }
 
 // Normalized search result format
-export interface SearchResult {
-  title: string;
-  url: string;
-  snippet: string;
+export interface SearchResult extends CoreSearchResult {
   rank?: number;
   resultType?: string;
   searchEngine: string;
