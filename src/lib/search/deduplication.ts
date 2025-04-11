@@ -1,11 +1,5 @@
-import { CoreSearchResult } from './common-types';
+import { SearchResult } from './types';
 import getLevenshteinDistance from 'fast-levenshtein';
-
-export interface SearchResult extends CoreSearchResult {
-  position: number;
-  provider: string;
-  [key: string]: any; // Allow string indexing
-}
 
 export interface DuplicateLog {
   original: SearchResult;
@@ -276,8 +270,8 @@ export class DeduplicationService {
     
     // Create a provenance record to track where each field came from
     const provenance: Record<string, string> = {};
-    provenance.original_provider = original.provider;
-    provenance.duplicate_provider = duplicate.provider;
+    provenance.original_provider = original.searchEngine;
+    provenance.duplicate_provider = duplicate.searchEngine;
     
     // Apply the merge strategy
     for (const { field, sourcePreference } of strategy.priority) {
@@ -288,20 +282,20 @@ export class DeduplicationService {
       if (strategy.combineFields?.includes(field) && original[field] && duplicate[field]) {
         // Simple concatenation - could be more sophisticated
         merged[field] = `${original[field]} ${duplicate[field]}`;
-        provenance[field] = `combined:${original.provider},${duplicate.provider}`;
+        provenance[field] = `combined:${original.searchEngine},${duplicate.searchEngine}`;
       } else {
         // Otherwise, use preference order
         let assigned = false;
         
-        for (const provider of sourcePreference) {
-          if (original.provider === provider && original[field]) {
+        for (const searchEngine of sourcePreference) {
+          if (original.searchEngine === searchEngine && original[field]) {
             merged[field] = original[field];
-            provenance[field] = original.provider;
+            provenance[field] = original.searchEngine;
             assigned = true;
             break;
-          } else if (duplicate.provider === provider && duplicate[field]) {
+          } else if (duplicate.searchEngine === searchEngine && duplicate[field]) {
             merged[field] = duplicate[field];
-            provenance[field] = duplicate.provider;
+            provenance[field] = duplicate.searchEngine;
             assigned = true;
             break;
           }
@@ -311,10 +305,10 @@ export class DeduplicationService {
         if (!assigned) {
           if (original[field]) {
             merged[field] = original[field];
-            provenance[field] = original.provider;
+            provenance[field] = original.searchEngine;
           } else if (duplicate[field]) {
             merged[field] = duplicate[field];
-            provenance[field] = duplicate.provider;
+            provenance[field] = duplicate.searchEngine;
           }
         }
       }

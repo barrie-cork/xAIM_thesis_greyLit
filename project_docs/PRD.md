@@ -1,7 +1,3 @@
-Absolutely — here’s a clear, structured, and comprehensive **Product Requirements Document (PRD)** for the **Grey Literature Search App**. It includes product vision, core features, workflows, data models, and technical considerations — ideal for aligning your development team.
-
----
-
 # 📘 Product Requirements Document (PRD)
 
 **Product Name:** *Grey Literature Search App*\
@@ -42,7 +38,6 @@ The *Grey Literature Search App* enables researchers to systematically search, s
 ### 🔍 **Search Strategy Builder**
 
 - Define structured concepts (Population, Interest, Context)
-- Auto-generate synonyms from local MeSH data
 - Select target websites and SERP APIs
 - Add filetype filters (PDF, DOCX)
 - Include "clinical guideline" terms toggle

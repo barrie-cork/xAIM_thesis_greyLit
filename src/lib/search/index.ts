@@ -3,11 +3,13 @@ export * from './types';
 export * from './provider';
 export * from './base-provider';
 export * from './factory';
-export * from './search-service';
 export * from './utils';
 export * from './common-types';
-export * from './result-resolver';
 export { DeduplicationService } from './deduplication';
+
+// Export new services from the refactoring
+export { SerpExecutorService } from './serp-executor.service';
+export { ResultsProcessorService, ProcessingResult, ProcessingContext } from './results-processor.service';
 
 // Export providers
 export * from './providers/serper';
@@ -18,13 +20,12 @@ import { SearchProviderType } from './factory';
 // Import the correct options type
 import { DeduplicationOptions, DEFAULT_DEDUPLICATION_OPTIONS } from './deduplication';
 import { CacheOptions } from './cache-service'; // Assuming CacheOptions might be needed too
-import { SearchServiceConfig } from './search-service'; // Import the config type
 
 /**
  * Default configuration for the search service
  * Currently only using Serper API since SerpAPI key validation is pending
  */
-export const DEFAULT_SEARCH_CONFIG: SearchServiceConfig = {
+export const DEFAULT_SEARCH_CONFIG: any = {
   providers: {
     [SearchProviderType.SERPER]: {
       apiKey: process.env.SERPER_API_KEY || '',
