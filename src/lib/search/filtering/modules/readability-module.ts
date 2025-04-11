@@ -94,12 +94,22 @@ export class ReadabilityModule implements EnrichmentModule {
 
   /**
    * Update module configuration
+   * Only updates keys with defined values.
    */
   updateConfig(config: Partial<typeof ReadabilityModule.prototype.config>): void {
-    this.config = {
-      ...this.config,
-      ...config
-    };
+    // Iterate over the keys in the provided config object
+    for (const key in config) {
+      // Ensure the key belongs to the config object itself (not prototype)
+      if (Object.prototype.hasOwnProperty.call(config, key)) {
+        // Get the value for the key
+        const value = config[key as keyof typeof config];
+        // Only update if the value is not undefined
+        if (value !== undefined) {
+          // Use type assertion as we know the key exists in this.config type
+          (this.config as any)[key] = value;
+        }
+      }
+    }
   }
 
   /**

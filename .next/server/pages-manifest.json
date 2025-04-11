@@ -2,8 +2,5 @@
   "/_app": "pages/_app.js",
   "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
-  "/": "pages/index.js",
-  "/search-builder": "pages/search-builder.js",
-  "/search-results": "pages/search-results.js",
-  "/api/search": "pages/api/search.js"
+  "/search-results": "pages/search-results.js"
 }

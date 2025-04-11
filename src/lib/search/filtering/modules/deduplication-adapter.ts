@@ -1,6 +1,6 @@
 import { SearchResult as BaseSearchResult } from '../../types';
 import { EnrichmentModule } from '../types';
-import { DeduplicationService, DeduplicationOptions, SearchResult as DeduplicationSearchResult } from '../../deduplication';
+import { DeduplicationService, DeduplicationOptions } from '../../deduplication';
 import { convertSearchResult, SearchResultTypeMap } from '../../common-types';
 
 /**
@@ -35,12 +35,24 @@ export class DeduplicationAdapter implements EnrichmentModule {
    */
   async processBatch(results: BaseSearchResult[]): Promise<BaseSearchResult[]> {
     if (results.length <= 1) {
-      return results;
+      // Add default metadata even if deduplication is skipped
+      return results.map(result => ({
+        ...result,
+        metadata: {
+          ...result.metadata,
+          deduplication: {
+            timestamp: new Date(),
+            originalCount: results.length,
+            uniqueCount: results.length,
+            duplicatesRemoved: 0
+          }
+        }
+      }));
     }
 
     // Convert BaseSearchResult to DeduplicationSearchResult using the utility function
-    const deduplicationResults: DeduplicationSearchResult[] = results.map(result => {
-      const converted = convertSearchResult<BaseSearchResult, DeduplicationSearchResult>(
+    const deduplicationResults = results.map(result => {
+      const converted = convertSearchResult<BaseSearchResult, BaseSearchResult>(
         result, 
         SearchResultTypeMap.apiToDeduplication
       );

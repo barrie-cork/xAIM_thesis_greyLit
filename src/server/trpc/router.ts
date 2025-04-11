@@ -1,11 +1,26 @@
-import { protectedProcedure, publicProcedure, router as createRouter } from './procedures';
+import { protectedProcedure, publicProcedure, router as createRouter } from './trpc';
 import { z } from 'zod';
 import { prisma } from '../db/client';
 import { TRPCError } from '@trpc/server';
-import { DEFAULT_SEARCH_CONFIG, FileType, SearchProviderType, SearchService } from '@/lib/search';
+import { 
+  DEFAULT_SEARCH_CONFIG, 
+  FileType, 
+  SearchProviderType, 
+  SerpExecutorService, 
+  ResultsProcessorService, 
+  SearchRequest as LibSearchRequest // Alias to avoid conflict 
+} from '@/lib/search';
 
-// Initialize the search service with default configuration
-const searchService = new SearchService(DEFAULT_SEARCH_CONFIG);
+// Initialize the new services with default configuration
+// Pass only the relevant parts of the config to each service
+const serpExecutor = new SerpExecutorService({ 
+  providers: DEFAULT_SEARCH_CONFIG.providers, 
+  defaultProvider: DEFAULT_SEARCH_CONFIG.defaultProvider 
+});
+const resultsProcessor = new ResultsProcessorService({ 
+  deduplication: DEFAULT_SEARCH_CONFIG.deduplication, 
+  cache: DEFAULT_SEARCH_CONFIG.cache 
+}, prisma);
 
 /**
  * Main router for all tRPC routes
@@ -25,8 +40,8 @@ export const appRouter = createRouter({
         })
       )
       .mutation(async ({ ctx, input }) => {
-        // Validate user is authenticated
-        if (!ctx.session?.userId) {
+        // Correctly access userId from the session context
+        if (!ctx.session?.user?.id) {
           throw new TRPCError({
             code: 'UNAUTHORIZED',
             message: 'You must be logged in to create a search request',
@@ -41,15 +56,15 @@ export const appRouter = createRouter({
             filters: input.filters,
             searchTitle: input.search_title,
             isSaved: input.is_saved,
-            userId: ctx.session.userId,
+            userId: ctx.session.user.id,
           },
         });
       }),
 
     // Get all saved searches for the current user
     getSavedSearches: protectedProcedure.query(async ({ ctx }) => {
-      // Validate user is authenticated
-      if (!ctx.session?.userId) {
+      // Correctly access userId
+      if (!ctx.session?.user?.id) {
         throw new TRPCError({
           code: 'UNAUTHORIZED',
           message: 'You must be logged in to get saved searches',
@@ -59,7 +74,7 @@ export const appRouter = createRouter({
       // Get all saved searches for the user
       return prisma.searchRequest.findMany({
         where: {
-          userId: ctx.session.userId,
+          userId: ctx.session.user.id,
           isSaved: true,
         },
         orderBy: {
@@ -79,101 +94,141 @@ export const appRouter = createRouter({
           page: z.number().min(1).optional(),
           domain: z.string().optional(),
           providers: z.array(z.nativeEnum(SearchProviderType)).optional(),
-          saveToDB: z.boolean().optional(),
+          saveToDB: z.boolean().optional().default(false),
           searchTitle: z.string().optional(),
+          useCache: z.boolean().optional().default(true),
+          deduplication: z.union([
+            z.boolean(),
+            z.object({
+              threshold: z.number().optional(),
+            })
+          ]).optional().default(true),
         })
       )
       .mutation(async ({ ctx, input }) => {
-        // Validate user is authenticated
-        if (!ctx.session?.userId) {
-          throw new TRPCError({
-            code: 'UNAUTHORIZED',
-            message: 'You must be logged in to execute a search',
-          });
+        // Correctly access userId
+        if (!ctx.session?.user?.id) {
+          throw new TRPCError({ code: 'UNAUTHORIZED' });
         }
         
         try {
           // Combine fileType and fileTypes
           const fileTypes = input.fileTypes || (input.fileType ? [input.fileType] : undefined);
           
-          // Execute the search
-          const searchResponses = await searchService.search({
+          // Construct the SearchRequest object for the library services
+          const searchRequest: LibSearchRequest = {
             query: input.query,
             maxResults: input.maxResults,
             fileType: fileTypes,
             page: input.page,
             domain: input.domain,
             providers: input.providers,
-          });
+            useCache: input.useCache,
+            deduplication: input.deduplication,
+          };
+
+          let searchRequestId: string | undefined = undefined;
           
-          // If the user wants to save the search to the database
+          // --- Step 1: Create DB record if saving ---
           if (input.saveToDB) {
-            // Create a search request in the database
-            const searchRequest = await prisma.searchRequest.create({
+            const createdRequest = await prisma.searchRequest.create({
               data: {
                 query: input.query,
-                source: searchResponses.map(r => r.metadata.searchEngine).join(','),
+                source: input.providers?.join(',') || 'default', // Indicate source providers
                 filters: {
                   fileTypes: fileTypes?.map(ft => ft.toString()),
                   domain: input.domain,
                   maxResults: input.maxResults,
+                  page: input.page,
                 },
                 searchTitle: input.searchTitle || `Search: ${input.query.substring(0, 50)}`,
                 isSaved: true,
-                userId: ctx.session.userId,
+                userId: ctx.session.user.id,
+                status: 'pending', // Initial status
               },
+              select: { queryId: true } // Select only the ID
             });
+            searchRequestId = createdRequest.queryId;
             
-            // Save all search results to the database
-            for (const response of searchResponses) {
-              await Promise.all(
-                response.results.map((result, index) => {
-                  return prisma.searchResult.create({
-                    data: {
-                      queryId: searchRequest.queryId,
-                      title: result.title,
-                      url: result.url,
-                      snippet: result.snippet,
-                      rank: result.rank || index + 1,
-                      resultType: result.resultType,
-                      searchEngine: result.searchEngine,
-                      device: result.device,
-                      location: result.location,
-                      language: result.language,
-                      totalResults: response.pagination?.totalResults,
-                      creditsUsed: response.metadata.creditsUsed,
-                      searchId: response.metadata.searchId,
-                      searchUrl: response.metadata.searchUrl,
-                      relatedSearches: response.metadata.searchEngine === 'Google' 
-                        ? { searches: response.results.map(r => r.title) } as any
-                        : undefined,
-                      timestamp: new Date(),
-                      rawResponse: result.rawResponse,
-                    },
-                  });
-                })
-              );
+            // Update status to processing
+            await prisma.searchRequest.update({
+                where: { queryId: searchRequestId },
+                data: { status: 'processing' }
+            });
+          }
+
+          // --- Step 2: Execute search via SerpExecutorService ---
+          console.log(`Executing search for query: ${searchRequest.query}`);
+          const initialResults = await serpExecutor.execute(searchRequest);
+          console.log(`Executor returned ${initialResults.length} initial results.`);
+          
+          // --- Step 3: Process results via ResultsProcessorService ---
+          console.log(`Processing ${initialResults.length} results...`);
+          const processingContext = {
+            searchRequestId: searchRequestId, // Pass ID if saving
+            userId: ctx.session.user.id
+          };
+          const processingResult = await resultsProcessor.process(
+            initialResults, 
+            searchRequest, 
+            processingContext
+          );
+          console.log(`Processor finished. Unique results: ${processingResult.uniqueResults.length}, CacheHit: ${processingResult.cacheHit}`);
+
+          // --- Step 4: Update DB record status if saving ---
+          if (searchRequestId) {
+              await prisma.searchRequest.update({
+                  where: { queryId: searchRequestId },
+                  data: {
+                      status: 'completed',
+                      metadata: { // Store processing metadata
+                          originalCount: initialResults.length,
+                          uniqueCount: processingResult.uniqueResults.length,
+                          duplicatesRemoved: processingResult.duplicatesRemoved,
+                          cacheHit: processingResult.cacheHit,
+                          completedAt: new Date().toISOString()
+                      }
+                  }
+              });
+          }
+
+          // --- Step 5: Return result ---
+          return {
+            results: processingResult.uniqueResults,
+            meta: {
+                searchRequestId: searchRequestId, // Return ID if saved
+                savedToDB: !!searchRequestId,
+                cacheHit: processingResult.cacheHit,
+                duplicatesRemoved: processingResult.duplicatesRemoved,
+                originalCount: initialResults.length,
+                uniqueCount: processingResult.uniqueResults.length
             }
-            
-            // Return both search responses and database info
-            return {
-              searchResponses,
-              searchRequestId: searchRequest.queryId,
-              savedToDB: true,
-            };
+          };
+
+        } catch (error: any) {
+          console.error('Search execution pipeline error:', error);
+          // If saving, update the DB record status to error
+          if (searchRequestId) {
+             try {
+                await prisma.searchRequest.update({
+                    where: { queryId: searchRequestId },
+                    data: {
+                        status: 'error',
+                        metadata: { 
+                           ...(await prisma.searchRequest.findUnique({ where: { queryId: searchRequestId }, select: { metadata: true } })?.metadata || {}),
+                           error: error.message || 'Unknown error',
+                           failedAt: new Date().toISOString()
+                         }
+                    }
+                });
+             } catch (updateError) {
+                 console.error('Failed to update search request status to error:', updateError);
+             }
           }
           
-          // Return just the search responses if not saving to DB
-          return {
-            searchResponses,
-            savedToDB: false,
-          };
-        } catch (error: any) {
-          console.error('Search execution error:', error);
-          
           throw new TRPCError({
-            code: 'INTERNAL_SERVER_ERROR',
-            message: error.message || 'Failed to execute search',
+            code: error instanceof TRPCError ? error.code : 'INTERNAL_SERVER_ERROR',
+            message: error.message || 'Failed to execute search pipeline',
             cause: error,
           });
         }
@@ -182,7 +237,7 @@ export const appRouter = createRouter({
     // Get available search providers
     getProviders: publicProcedure.query(async () => {
       return {
-        providers: searchService.getAvailableProviders(),
+        providers: serpExecutor.getAvailableProviders(),
         defaultProvider: DEFAULT_SEARCH_CONFIG.defaultProvider,
       };
     }),

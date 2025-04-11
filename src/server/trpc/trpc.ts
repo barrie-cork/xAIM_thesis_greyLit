@@ -3,6 +3,7 @@ import superjson from 'superjson';
 import { ZodError } from 'zod';
 import { Context } from './context';
 import logger, { logError } from '../../utils/logger';
+import { toCamelCase } from '../../schemas/common';
 
 /**
  * Initialize tRPC
@@ -57,6 +58,37 @@ export const middleware = t.middleware;
 export const procedure = t.procedure;
 
 /**
+ * Middleware to convert snake_case to camelCase in response data
+ * This ensures consistent casing between database and API
+ */
+const caseConversionMiddleware = middleware(async ({ next }) => {
+  const result = await next();
+  
+  // Function to recursively convert object properties
+  const convertData = (data: any): any => {
+    if (Array.isArray(data)) {
+      return data.map(item => convertData(item));
+    } else if (data !== null && typeof data === 'object') {
+      // Need to handle non-plain objects carefully
+      // Assuming toCamelCase handles this or data is mostly plain objects
+      return toCamelCase(data);
+    }
+    return data;
+  };
+
+  // Handle successful result by converting the data
+  if (result.ok) {
+    return {
+      ...result,
+      data: convertData(result.data)
+    };
+  }
+  
+  // Return error results as is
+  return result;
+});
+
+/**
  * Create base logger middleware
  * This logs information about all requests
  */
@@ -88,8 +120,8 @@ const loggerMiddleware = middleware(async ({ path, type, next, ctx }) => {
   return result;
 });
 
-// Apply logger middleware to all procedures
-const baseProcedure = procedure.use(loggerMiddleware);
+// Apply logger AND case conversion middleware to all procedures
+const baseProcedure = procedure.use(loggerMiddleware).use(caseConversionMiddleware);
 export const publicProcedure = baseProcedure;
 
 /**
@@ -112,6 +144,6 @@ const enforceUserIsAuthed = middleware(({ ctx, next }) => {
 
 /**
  * Protected procedure for authenticated users only
- * This is already using the logger middleware via baseProcedure
+ * This is already using the logger and case conversion middleware via baseProcedure
  */
 export const protectedProcedure = baseProcedure.use(enforceUserIsAuthed); 

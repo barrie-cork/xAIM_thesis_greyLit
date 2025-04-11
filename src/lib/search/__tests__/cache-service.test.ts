@@ -1,61 +1,34 @@
 import { CacheService, CacheOptions } from '../cache-service';
-import { SearchResponse, SearchRequest } from '../search-service';
+import { SearchResponse, SearchRequest } from '../types';
 import { SearchProviderType } from '../factory';
 import { PrismaClient } from '@prisma/client';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 
 // Define mock prisma type
 type MockPrisma = {
-  searchCache: {
+  cacheEntry: {
     create: ReturnType<typeof vi.fn>;
     findUnique: ReturnType<typeof vi.fn>;
     findMany: ReturnType<typeof vi.fn>;
     update: ReturnType<typeof vi.fn>;
+    upsert: ReturnType<typeof vi.fn>;
     delete: ReturnType<typeof vi.fn>;
     deleteMany: ReturnType<typeof vi.fn>;
   };
-  searchRequest: {
-    create: ReturnType<typeof vi.fn>;
-    findUnique: ReturnType<typeof vi.fn>;
-    findMany: ReturnType<typeof vi.fn>;
-    update: ReturnType<typeof vi.fn>;
-    delete: ReturnType<typeof vi.fn>;
-    deleteMany: ReturnType<typeof vi.fn>;
-  };
-  $transaction: ReturnType<typeof vi.fn>;
+  $transaction?: ReturnType<typeof vi.fn>;
 };
 
 // Create a mock of PrismaClient
 const createMockPrisma = (): MockPrisma => ({
-  searchCache: {
+  cacheEntry: {
     create: vi.fn(),
     findUnique: vi.fn(),
     findMany: vi.fn(),
     update: vi.fn(),
+    upsert: vi.fn(),
     delete: vi.fn(),
     deleteMany: vi.fn(),
   },
-  searchRequest: {
-    create: vi.fn(),
-    findUnique: vi.fn(),
-    findMany: vi.fn(),
-    update: vi.fn(),
-    delete: vi.fn(),
-    deleteMany: vi.fn(),
-  },
-  $transaction: vi.fn(async (callback) => {
-    if (typeof callback === 'function') {
-      return callback(createMockPrisma());
-    }
-    return Promise.all(callback as any[]);
-  })
-});
-
-// Mock Prisma
-vi.mock('@prisma/client', () => {
-  return {
-    PrismaClient: vi.fn().mockImplementation(() => createMockPrisma())
-  };
 });
 
 describe('CacheService', () => {
@@ -92,15 +65,13 @@ describe('CacheService', () => {
   ];
 
   beforeEach(() => {
-    // Reset mocks before each test
+    vi.resetAllMocks();
     prisma = createMockPrisma();
-    cacheService = new CacheService(prisma as unknown as PrismaClient, {
-      ttl: 60, // 1 minute for testing
+    
+    cacheService = new CacheService(prisma as any, {
+      ttl: 60,
       enabled: true
     });
-    
-    // Reset all mock functions
-    vi.clearAllMocks();
   });
 
   it('should generate consistent fingerprints for identical requests', () => {
@@ -155,10 +126,8 @@ describe('CacheService', () => {
   });
 
   it('should store and retrieve from memory cache', async () => {
-    // Store in cache
     await cacheService.set(sampleRequest, sampleResponse);
     
-    // Retrieve from cache
     const cachedResult = await cacheService.get(sampleRequest);
     
     expect(cachedResult).toEqual(sampleResponse);
@@ -173,30 +142,23 @@ describe('CacheService', () => {
   });
 
   it('should invalidate specific cache entries', async () => {
-    // Store in cache
     await cacheService.set(sampleRequest, sampleResponse);
     
-    // Get fingerprint
     const fingerprint = cacheService.generateFingerprint(sampleRequest);
     
-    // Invalidate entry
     cacheService.invalidate(fingerprint);
     
-    // Try to retrieve
     const cachedResult = await cacheService.get(sampleRequest);
     
     expect(cachedResult).toBeNull();
   });
 
   it('should invalidate all cache entries', async () => {
-    // Store multiple entries
     await cacheService.set(sampleRequest, sampleResponse);
     await cacheService.set({ query: 'another query' }, sampleResponse);
     
-    // Invalidate all
     cacheService.invalidateAll();
     
-    // Try to retrieve
     const cachedResult1 = await cacheService.get(sampleRequest);
     const cachedResult2 = await cacheService.get({ query: 'another query' });
     
@@ -205,20 +167,16 @@ describe('CacheService', () => {
   });
 
   it('should track hit/miss statistics', async () => {
-    // Initial stats
     const initialStats = cacheService.getStats();
     expect(initialStats.hits).toBe(0);
     expect(initialStats.misses).toBe(0);
     
-    // Miss
     await cacheService.get(sampleRequest);
     let stats = cacheService.getStats();
     expect(stats.misses).toBe(1);
     
-    // Store
     await cacheService.set(sampleRequest, sampleResponse);
     
-    // Hit
     await cacheService.get(sampleRequest);
     stats = cacheService.getStats();
     expect(stats.hits).toBe(1);
@@ -226,66 +184,48 @@ describe('CacheService', () => {
     expect(stats.hitRate).toBe(0.5);
   });
 
-  test('should interact with database for caching when userId is provided', async () => {
-    const userId = 'user-123';
+  test('should interact with cacheEntry table in database', async () => {
+    prisma.cacheEntry.findUnique.mockResolvedValue(null);
+    prisma.cacheEntry.upsert.mockResolvedValue({ 
+        fingerprint: 'test-fingerprint', 
+        results: '[]', 
+        expiresAt: new Date() 
+    } as any);
     
-    // Mock database queries
-    prisma.searchRequest.findFirst.mockResolvedValue(null);
-    prisma.searchRequest.create.mockResolvedValue({ queryId: 'query-123' } as any);
+    await cacheService.set(sampleRequest, sampleResponse);
     
-    // Mock transaction to just return the result of the callback
-    prisma.$transaction.mockImplementation((callback: any) => {
-      // If callback is a function, call it with prisma
-      if (typeof callback === 'function') {
-        return Promise.resolve(callback(prisma));
-      }
-      // Otherwise, just resolve with the input (for array case)
-      return Promise.resolve(callback);
-    });
-    
-    // Store in cache with userId
-    await cacheService.set(sampleRequest, sampleResponse, userId);
-    
-    // Verify db was called
-    expect(prisma.$transaction).toHaveBeenCalled();
-    expect(prisma.searchRequest.create).toHaveBeenCalled();
-    
-    // Setup mock for db retrieval
+    expect(prisma.cacheEntry.upsert).toHaveBeenCalled();
+    const upsertArgs = prisma.cacheEntry.upsert.mock.calls[0][0];
+    expect(upsertArgs.where.fingerprint).toBeDefined();
+    expect(upsertArgs.create.results).toEqual(JSON.stringify(sampleResponse));
+    expect(upsertArgs.update.results).toEqual(JSON.stringify(sampleResponse));
+
+    const fingerprint = cacheService.generateFingerprint(sampleRequest);
     const mockDbResult = {
-      queryId: 'query-123',
-      userId,
-      query: sampleRequest.query,
-      timestamp: new Date(),
-      searchResults: [
-        {
-          id: 'result-123',
-          title: 'Test Result',
-          url: 'https://example.com',
-          snippet: 'This is a test result',
-          searchEngine: 'google',
-          timestamp: new Date()
-        }
-      ]
+      fingerprint: fingerprint,
+      results: JSON.stringify(sampleResponse),
+      expiresAt: new Date(Date.now() + 60000),
     };
     
-    prisma.searchRequest.findFirst.mockResolvedValue(mockDbResult as any);
+    prisma.cacheEntry.findUnique.mockResolvedValue(mockDbResult as any);
     
-    // Retrieve from cache with userId
-    await cacheService.get(sampleRequest, userId);
+    const result = await cacheService.get(sampleRequest);
     
-    // Verify db was queried
-    expect(prisma.searchRequest.findFirst).toHaveBeenCalled();
+    expect(prisma.cacheEntry.findUnique).toHaveBeenCalled();
+    const findArgs = prisma.cacheEntry.findUnique.mock.calls[0][0];
+    expect(findArgs.where.fingerprint).toBe(fingerprint);
+    
+    expect(result).toEqual(sampleResponse);
   });
 
   test('should clean up database entries', async () => {
-    // Mock database delete
-    prisma.searchRequest.deleteMany.mockResolvedValue({ count: 5 });
+    prisma.cacheEntry.deleteMany.mockResolvedValue({ count: 5 });
     
-    // Clean up database
     const deletedCount = await cacheService.cleanupDatabase(60);
     
-    // Verify db was called with correct date
-    expect(prisma.searchRequest.deleteMany).toHaveBeenCalled();
+    expect(prisma.cacheEntry.deleteMany).toHaveBeenCalled();
+    const deleteArgs = prisma.cacheEntry.deleteMany.mock.calls[0][0];
+    expect(deleteArgs.where.expiresAt.lt).toBeInstanceOf(Date);
     expect(deletedCount).toBe(5);
   });
 }); 

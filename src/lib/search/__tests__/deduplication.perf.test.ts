@@ -1,10 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { DeduplicationService, SearchResult as DeduplicationSearchResult } from '../deduplication';
+import { DeduplicationService } from '../deduplication';
+import { SearchResult } from '../types';
 import { faker } from '@faker-js/faker'; // Using faker to generate diverse data
 
 // Helper to generate mock search results for deduplication
-const generateMockResults = (count: number, duplicateRatio: number = 0.2): DeduplicationSearchResult[] => {
-  const results: DeduplicationSearchResult[] = [];
+const generateMockResults = (count: number, duplicateRatio: number = 0.2): SearchResult[] => {
+  const results: SearchResult[] = [];
   const uniqueUrls = new Set<string>();
   const uniqueTitles = new Set<string>();
 
@@ -46,9 +47,10 @@ const generateMockResults = (count: number, duplicateRatio: number = 0.2): Dedup
       title,
       url,
       snippet: faker.lorem.paragraph(),
-      position: i,
-      provider: faker.company.name(),
-      metadata: { score: Math.random() }
+      rank: i + 1,
+      searchEngine: faker.company.name(),
+      timestamp: new Date(),
+      metadata: { providerSpecific: { score: Math.random() } }
     });
   }
   return results;

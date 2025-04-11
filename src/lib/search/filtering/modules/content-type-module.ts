@@ -244,72 +244,81 @@ export class ContentTypeModule implements EnrichmentModule {
    * Process a single search result
    */
   async process(result: BaseSearchResult): Promise<BaseSearchResult> {
-    const metadata: ContentTypeMetadata = {
+    const detectedMetadata: Partial<ContentTypeMetadata> & { confidence: Record<string, number> } = {
       calculatedAt: new Date(),
       confidence: {}
     };
-    
-    // Detect file type from URL
-    if (this.config.detectFromUrl && result.url) {
-      const fileType = this.detectFileType(result.url);
-      if (fileType) {
-        metadata.fileType = fileType.type;
-        metadata.confidence.fileType = fileType.confidence;
+    const snippet = result.snippet || '';
+    const title = result.title || '';
+    const url = result.url || '';
+
+    // Detect File Type
+    if (this.config.detectFromUrl && url) {
+      const fileTypeInfo = this.detectFileType(url);
+      if (fileTypeInfo) {
+        detectedMetadata.fileType = fileTypeInfo.type;
+        detectedMetadata.confidence.fileType = fileTypeInfo.confidence;
+      } else {
+        // Default to HTML if no specific extension found and URL looks like a webpage
+        if (url.match(/^https?:\/\//) && !url.match(/\.[a-zA-Z0-9]+$/)) {
+           detectedMetadata.fileType = 'HTML';
+           detectedMetadata.confidence.fileType = 0.1; // Low confidence default
+        }
       }
     }
-    
-    // Detect content type from URL and snippet
-    if ((this.config.detectFromUrl && result.url) || (this.config.detectFromSnippet && result.snippet)) {
-      const contentType = this.detectContentType(result.url || '', result.snippet || '');
-      if (contentType) {
-        metadata.contentType = contentType.type;
-        metadata.confidence.contentType = contentType.confidence;
+
+    // Detect Content Type
+    if ((this.config.detectFromUrl && url) || (this.config.detectFromSnippet && snippet)) {
+      const contentTypeInfo = this.detectContentType(url, snippet);
+      if (contentTypeInfo) {
+        detectedMetadata.contentType = contentTypeInfo.type;
+        detectedMetadata.confidence.contentType = contentTypeInfo.confidence;
       }
     }
-    
-    // Detect if academic content
-    if (this.config.identifyAcademic && (result.url || result.snippet)) {
-      const isAcademic = this.isAcademicContent(result.url || '', result.snippet || '');
-      if (isAcademic) {
-        metadata.isAcademic = isAcademic.value;
-        metadata.confidence.isAcademic = isAcademic.confidence;
+
+    // Identify Academic Content
+    if (this.config.identifyAcademic && (url || snippet)) {
+      const academicInfo = this.isAcademicContent(url, snippet);
+      if (academicInfo) {
+        detectedMetadata.isAcademic = academicInfo.value;
+        detectedMetadata.confidence.isAcademic = academicInfo.confidence;
       }
     }
-    
-    // Extract publication date
-    if (this.config.extractDates && (result.snippet || result.title)) {
-      const date = this.extractPublicationDate(result.snippet || '', result.title || '');
-      if (date) {
-        metadata.publicationDate = date.date;
-        metadata.publicationYear = date.date.getFullYear();
-        metadata.confidence.publicationDate = date.confidence;
+
+    // Extract Publication Date
+    if (this.config.extractDates && (snippet || title)) {
+      const dateInfo = this.extractPublicationDate(snippet, title);
+      if (dateInfo) {
+        detectedMetadata.publicationDate = dateInfo.date;
+        detectedMetadata.publicationYear = dateInfo.date.getFullYear(); // Extract year too
+        detectedMetadata.confidence.publicationDate = dateInfo.confidence;
       }
     }
-    
-    // Detect language
-    if (this.config.detectLanguage && (result.snippet || result.title)) {
-      const language = this.detectLanguage(result.snippet || '', result.title || '');
-      if (language) {
-        metadata.language = language.language;
-        metadata.confidence.language = language.confidence;
+
+    // Detect Language
+    if (this.config.detectLanguage && (snippet || title)) {
+      const languageInfo = this.detectLanguage(snippet, title);
+      if (languageInfo) {
+        detectedMetadata.language = languageInfo.language;
+        detectedMetadata.confidence.language = languageInfo.confidence;
       }
     }
-    
-    // Identify organization type
-    if (this.config.identifyOrganizationType && (result.url || result.snippet)) {
-      const orgType = this.identifyOrganizationType(result.url || '', result.snippet || '');
-      if (orgType) {
-        metadata.organizationType = orgType.type;
-        metadata.confidence.organizationType = orgType.confidence;
+
+    // Identify Organization Type
+    if (this.config.identifyOrganizationType && (url || snippet)) {
+      const orgTypeInfo = this.identifyOrganizationType(url, snippet);
+      if (orgTypeInfo) {
+        detectedMetadata.organizationType = orgTypeInfo.type;
+        detectedMetadata.confidence.organizationType = orgTypeInfo.confidence;
       }
     }
-    
-    // Create enriched result with content type metadata
+
+    // Return result with merged metadata
     return {
       ...result,
       metadata: {
         ...result.metadata,
-        contentType: metadata
+        ...detectedMetadata
       }
     };
   }

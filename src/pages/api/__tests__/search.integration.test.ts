@@ -6,10 +6,8 @@ import { vi } from 'vitest'; // Import vi first
 const prismaMock = vi.hoisted(() => ({
   searchRequest: {
     create: vi.fn(),
+    update: vi.fn(),
   },
-  // Add other potentially used Prisma methods if needed, or use mockDeep
-  // $connect: vi.fn(),
-  // $disconnect: vi.fn(),
 }));
 
 const serpExecutorMock = vi.hoisted(() => ({
@@ -22,17 +20,14 @@ const resultsProcessorMock = vi.hoisted(() => ({
 
 // STEP 2: Apply mocks to modules
 vi.mock('@prisma/client', () => ({
-  // __esModule: true, // May or may not be needed depending on module format
   PrismaClient: vi.fn(() => prismaMock),
 }));
 
 vi.mock('../../../lib/search/serp-executor.service', () => ({
-  // __esModule: true,
   SerpExecutorService: vi.fn(() => serpExecutorMock),
 }));
 
 vi.mock('../../../lib/search/results-processor.service', () => ({
-  // __esModule: true,
   ResultsProcessorService: vi.fn(() => resultsProcessorMock),
 }));
 
@@ -54,10 +49,13 @@ describe('/api/search handler', () => {
   beforeEach(() => {
     // Reset mocks before each test
     vi.clearAllMocks();
-    // If using jest-mock-extended's mockDeep, use mockReset(prismaMock)
 
     // Setup default mock return values
-    prismaMock.searchRequest.create.mockResolvedValue({ queryId: 'mock-id' });
+    prismaMock.searchRequest.create.mockResolvedValue({ 
+      queryId: 'mock-id',
+      query: 'test',
+      filters: { status: 'pending' }
+    });
     serpExecutorMock.execute.mockResolvedValue([]);
     resultsProcessorMock.process.mockResolvedValue({
       uniqueResults: [],
@@ -81,6 +79,71 @@ describe('/api/search handler', () => {
         message: 'Method Not Allowed',
       })
     );
+  });
+
+  it('should return 400 if required fields are missing', async () => {
+    req.method = 'POST';
+    req.body = {}; // Missing required fields
+
+    await handler(req, res);
+    expect(res.statusCode).toBe(400);
+    expect(res._getJSONData()).toEqual(
+      expect.objectContaining({
+        success: false,
+        message: expect.stringContaining('required'),
+      })
+    );
+  });
+
+  it('should return 400 if numResults is invalid', async () => {
+    req.method = 'POST';
+    req.body = {
+      query: 'test',
+      numResults: -1, // Invalid number
+      deduplication: true,
+      useCache: true,
+    };
+
+    await handler(req, res);
+    expect(res.statusCode).toBe(400);
+    expect(res._getJSONData()).toEqual(
+      expect.objectContaining({
+        success: false,
+        message: expect.stringContaining('numResults'),
+      })
+    );
+  });
+
+  it('should handle SERP execution errors gracefully', async () => {
+    req.method = 'POST';
+    req.body = {
+      query: 'test query',
+      numResults: 10,
+      deduplication: true,
+      useCache: true,
+    };
+
+    serpExecutorMock.execute.mockRejectedValueOnce(new Error('SERP API error'));
+
+    await handler(req, res);
+    expect(res.statusCode).toBe(500);
+    expect(res._getJSONData()).toEqual(
+      expect.objectContaining({
+        success: false,
+        message: expect.stringContaining('search execution failed'),
+      })
+    );
+
+    // Verify error was logged in searchRequest
+    expect(prismaMock.searchRequest.update).toHaveBeenCalledWith({
+      where: { queryId: 'mock-id' },
+      data: { 
+        filters: expect.objectContaining({
+          status: 'error',
+          error: expect.stringContaining('SERP API error')
+        })
+      }
+    });
   });
 
   it('should return search results for valid POST request', async () => {
@@ -118,11 +181,24 @@ describe('/api/search handler', () => {
     await handler(req, res);
 
     // Verify mock calls
-    expect(prismaMock.searchRequest.create).toHaveBeenCalled();
-    expect(serpExecutorMock.execute).toHaveBeenCalledWith(req.body);
+    expect(prismaMock.searchRequest.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          query: 'test query',
+          filters: expect.objectContaining({
+            status: 'pending',
+            maxResults: 10
+          })
+        })
+      })
+    );
+    expect(serpExecutorMock.execute).toHaveBeenCalledWith(expect.objectContaining({
+      query: 'test query',
+      maxResults: 10
+    }));
     expect(resultsProcessorMock.process).toHaveBeenCalledWith(
       mockApiResults,
-      req.body,
+      expect.any(Object),
       expect.objectContaining({ searchRequestId: 'mock-id' })
     );
 
@@ -135,6 +211,56 @@ describe('/api/search handler', () => {
         duplicatesRemoved: 0,
         cacheHit: false,
       },
+    });
+
+    // Verify final state update
+    expect(prismaMock.searchRequest.update).toHaveBeenCalledWith({
+      where: { queryId: 'mock-id' },
+      data: { 
+        filters: expect.objectContaining({
+          status: 'completed',
+          resultCount: 1,
+          cacheHit: false,
+          duplicatesRemoved: 0
+        })
+      }
+    });
+  });
+
+  it('should handle results processing errors gracefully', async () => {
+    req.method = 'POST';
+    req.body = {
+      query: 'test query',
+      numResults: 10,
+      deduplication: true,
+      useCache: true,
+    };
+
+    const mockApiResults = [
+      { title: 'Test Result', url: 'https://example.com', snippet: 'This is a test result' },
+    ];
+
+    serpExecutorMock.execute.mockResolvedValueOnce(mockApiResults);
+    resultsProcessorMock.process.mockRejectedValueOnce(new Error('Processing error'));
+
+    await handler(req, res);
+    expect(res.statusCode).toBe(500);
+    expect(res._getJSONData()).toEqual(
+      expect.objectContaining({
+        success: false,
+        message: expect.stringContaining('results processing failed'),
+      })
+    );
+
+    // Verify error was logged in searchRequest
+    expect(prismaMock.searchRequest.update).toHaveBeenCalledWith({
+      where: { queryId: 'mock-id' },
+      data: { 
+        filters: expect.objectContaining({
+          status: 'error',
+          error: expect.stringContaining('Processing error')
+        })
+      }
     });
   });
 }); 

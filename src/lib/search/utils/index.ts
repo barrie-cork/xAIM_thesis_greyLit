@@ -2,4 +2,4 @@
  * Search utility functions and helpers
  */
 
-export * from './deduplication'; 
+// Removed export: export * from './deduplication'; 

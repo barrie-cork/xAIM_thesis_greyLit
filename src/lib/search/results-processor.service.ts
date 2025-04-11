@@ -1,7 +1,8 @@
 import { PrismaClient } from '@prisma/client';
 import { SearchResult, SearchRequest, SearchResponse } from './types';
-import { DeduplicationService, DeduplicationOptions, DuplicateLog, DEFAULT_DEDUPLICATION_OPTIONS } from './deduplication';
+import { DeduplicationService, DeduplicationOptions, DuplicateLog } from './deduplication';
 import { CacheService, CacheOptions } from './cache-service';
+import { DEFAULT_SEARCH_CONFIG } from './index';
 
 // Define a type for the context needed during processing
 export interface ProcessingContext {
@@ -41,13 +42,16 @@ export class ResultsProcessorService {
 
         // Logic moved from SearchService constructor: Init Deduplication & Cache
         this.defaultDeduplicationOptions = {
-            ...DEFAULT_DEDUPLICATION_OPTIONS,
+            ...(DEFAULT_SEARCH_CONFIG.deduplication || {}),
             ...(config.deduplication || {})
         };
         this.deduplicationService = new DeduplicationService(this.defaultDeduplicationOptions);
 
         if (prismaClient) {
-            this.cacheService = new CacheService(prismaClient, config.cache);
+            this.cacheService = new CacheService(prismaClient, {
+                ...(DEFAULT_SEARCH_CONFIG.cache || {}),
+                ...(config.cache || {})
+            });
         }
     }
 

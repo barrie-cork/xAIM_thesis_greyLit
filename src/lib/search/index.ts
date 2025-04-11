@@ -3,13 +3,12 @@ export * from './types';
 export * from './provider';
 export * from './base-provider';
 export * from './factory';
-export * from './utils';
 export * from './common-types';
 export { DeduplicationService } from './deduplication';
 
 // Export new services from the refactoring
 export { SerpExecutorService } from './serp-executor.service';
-export { ResultsProcessorService, ProcessingResult, ProcessingContext } from './results-processor.service';
+export { ResultsProcessorService } from './results-processor.service';
 
 // Export providers
 export * from './providers/serper';

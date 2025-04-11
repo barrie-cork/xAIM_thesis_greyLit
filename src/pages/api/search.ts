@@ -4,6 +4,7 @@ import { SearchParams, SearchResult, SearchRequest } from '../../lib/search/type
 import { DEFAULT_SEARCH_CONFIG } from '../../lib/search/index';
 import { SerpExecutorService } from '../../lib/search/serp-executor.service';
 import { ResultsProcessorService, ProcessingContext, ProcessingResult } from '../../lib/search/results-processor.service';
+import { v4 as uuidv4 } from 'uuid';
 // Remove unused imports related to old workflow
 // import { SearchService, SearchResponse } from '@/lib/search';
 // import { DeduplicationService, SearchResult as DeduplicationSearchResult } from '@/lib/search/deduplication';
@@ -25,59 +26,153 @@ interface ApiResponse {
     };
 }
 
+// Define search request state for database
+type SearchRequestStatus = 'pending' | 'processing' | 'completed' | 'error';
+
+interface SearchRequestState {
+    status: SearchRequestStatus;
+    resultCount?: number;
+    error?: string;
+    [key: string]: any; // Allow additional properties for JSON storage
+}
+
+// Validate search request parameters
+function validateSearchRequest(body: any): { isValid: boolean; error?: string } {
+    if (!body.query || typeof body.query !== 'string') {
+        return { isValid: false, error: 'Query is required and must be a string' };
+    }
+
+    if (body.numResults !== undefined) {
+        const num = Number(body.numResults);
+        if (isNaN(num) || num < 1 || num > 100) {
+            return { isValid: false, error: 'numResults must be a number between 1 and 100' };
+        }
+    }
+
+    return { isValid: true };
+}
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse<ApiResponse>) {
     if (req.method !== 'POST') {
         return res.status(405).json({ success: false, message: 'Method Not Allowed' });
     }
 
     try {
-        const searchRequest: SearchRequest = req.body;
-        const userId = 'temp-user-id'; // TODO: Replace with actual user ID from session/auth
+        // Validate request
+        const validation = validateSearchRequest(req.body);
+        if (!validation.isValid) {
+            return res.status(400).json({ success: false, message: validation.error });
+        }
+
+        const searchRequest: SearchRequest = {
+            ...req.body,
+            maxResults: req.body.numResults // Map numResults to maxResults for internal use
+        };
+        const userId = uuidv4(); // TODO: Replace with actual user ID from session/auth
 
         // --- Instantiate New Services ---
-        // Use a type assertion or define a local config type based on DEFAULT_SEARCH_CONFIG structure
-        const config: any = DEFAULT_SEARCH_CONFIG; // Using any temporarily, refine if needed
+        const config: any = DEFAULT_SEARCH_CONFIG;
         const executorService = new SerpExecutorService(config);
         const processorService = new ResultsProcessorService(config, prisma);
 
-        // --- Save Search Request to DB (if needed to get ID for linking) ---
-        let searchRequestId: string | undefined = undefined;
+        // --- Save Search Request to DB ---
+        let searchRequestRecord;
         try {
-            const savedSearchRequest = await prisma.searchRequest.create({
+            const initialState: SearchRequestState = {
+                status: 'pending',
+                timestamp: new Date().toISOString(),
+                maxResults: searchRequest.maxResults
+            };
+
+            searchRequestRecord = await prisma.searchRequest.create({
                 data: {
-                    userId: userId,
+                    userId,
                     query: searchRequest.query,
-                    source: 'api', // Indicate source
-                    // Map other fields from searchRequest if needed (filters, title etc.)
-                    // Ensure all required fields are present
+                    source: 'api',
+                    filters: initialState
                 }
             });
-            searchRequestId = savedSearchRequest.queryId;
         } catch (dbError) {
             console.error("Error saving SearchRequest:", dbError);
-            // Decide how to handle this: proceed without linking, or return error?
-            // For now, log and proceed without linking.
+            return res.status(500).json({ 
+                success: false, 
+                message: 'Failed to initialize search request' 
+            });
         }
 
         // --- Execute Search ---
-        console.log(`Executing search for query: ${searchRequest.query}`);
-        const initialResults: SearchResult[] = await executorService.execute(searchRequest);
-        console.log(`Executor returned ${initialResults.length} initial results.`);
+        let initialResults: SearchResult[];
+        try {
+            console.log(`Executing search for query: ${searchRequest.query}`);
+            initialResults = await executorService.execute(searchRequest);
+            console.log(`Executor returned ${initialResults.length} initial results.`);
+        } catch (searchError: any) {
+            console.error('Search execution error:', searchError);
+            const errorState: SearchRequestState = {
+                status: 'error',
+                error: searchError.message || 'Search execution failed',
+                timestamp: new Date().toISOString()
+            };
+
+            await prisma.searchRequest.update({
+                where: { queryId: searchRequestRecord.queryId },
+                data: { filters: errorState }
+            });
+            
+            return res.status(500).json({ 
+                success: false, 
+                message: 'The search execution failed' 
+            });
+        }
 
         // --- Process Results ---
-        const processingContext: ProcessingContext = {
-            userId: userId,
-            searchRequestId: searchRequestId // Pass the saved request ID
-        };
-        console.log(`Processing ${initialResults.length} results...`);
-        const processingResult: ProcessingResult = await processorService.process(
-            initialResults,
-            searchRequest,
-            processingContext
-        );
-        console.log(`Processor finished. Unique results: ${processingResult.uniqueResults.length}, CacheHit: ${processingResult.cacheHit}`);
+        let processingResult: ProcessingResult;
+        try {
+            const processingContext: ProcessingContext = {
+                userId: userId,
+                searchRequestId: searchRequestRecord.queryId
+            };
+            console.log(`Processing ${initialResults.length} results...`);
+            processingResult = await processorService.process(
+                initialResults,
+                searchRequest,
+                processingContext
+            );
+            console.log(`Processor finished. Unique results: ${processingResult.uniqueResults.length}, CacheHit: ${processingResult.cacheHit}`);
 
-        // --- Format and Send Response ---
+            // Update search request with results info
+            const completedState: SearchRequestState = {
+                status: 'completed',
+                resultCount: processingResult.uniqueResults.length,
+                timestamp: new Date().toISOString(),
+                cacheHit: processingResult.cacheHit,
+                duplicatesRemoved: processingResult.duplicatesRemoved
+            };
+
+            await prisma.searchRequest.update({
+                where: { queryId: searchRequestRecord.queryId },
+                data: { filters: completedState }
+            });
+        } catch (processingError: any) {
+            console.error('Results processing error:', processingError);
+            const errorState: SearchRequestState = {
+                status: 'error',
+                error: processingError.message || 'Results processing failed',
+                timestamp: new Date().toISOString()
+            };
+
+            await prisma.searchRequest.update({
+                where: { queryId: searchRequestRecord.queryId },
+                data: { filters: errorState }
+            });
+            
+            return res.status(500).json({ 
+                success: false, 
+                message: 'The results processing failed' 
+            });
+        }
+
+        // --- Send Response ---
         res.status(200).json({
             success: true,
             data: processingResult.uniqueResults,
@@ -88,12 +183,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
         });
 
     } catch (error: any) {
-        console.error('Search API error:', error);
-        // Basic error handling, can be enhanced
-        const statusCode = error.statusCode || 500;
-        const message = error.message || 'An unexpected error occurred';
-        res.status(statusCode).json({ success: false, message });
-    }
+    console.error('Search API error:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'An unexpected error occurred' 
+    });
+  }
 }
 
 // Remove the unused getBatchInfo function entirely
