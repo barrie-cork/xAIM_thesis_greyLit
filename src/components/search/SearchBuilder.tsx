@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
+import Link from 'next/link';
 import {
   Card,
   CardHeader,
@@ -23,7 +24,9 @@ import {
   Textarea,
   Badge
 } from '@/components/ui';
-import { Search, Copy, ExternalLink, Plus, X, List, Settings, Trash2, Info, AlertCircle, Database, PlayCircle } from 'lucide-react';
+import { Search, Copy, ExternalLink, Plus, X, List, Settings, Trash2, Info, AlertCircle, Database, PlayCircle, Save, BookmarkIcon } from 'lucide-react';
+import SaveSearchDialog from './SaveSearchDialog';
+import { trpc } from '@/utils/trpc';
 
 // Concept group types
 type ConceptId = 'population' | 'interest' | 'context';
@@ -57,7 +60,7 @@ interface SearchOptions {
 // Clinical guideline terms
 const GUIDELINE_TERMS = [
   "guideline*",
-  "recommendation*", 
+  "recommendation*",
   "consensus",
   "guidance"
 ];
@@ -69,14 +72,14 @@ export default function SearchBuilder() {
     { id: 'interest', name: 'Interest', terms: [] },
     { id: 'context', name: 'Context', terms: [] }
   ]);
-  
+
   // Get router instance at the component level
   const router = useRouter();
-  
+
   // State for term input
   const [termInput, setTermInput] = useState<string>('');
   const [activeConceptId, setActiveConceptId] = useState<ConceptId>('population');
-  
+
   // Initialize search options state with localStorage if available
   const [options, setOptions] = useState<SearchOptions>(() => {
     // Check if we're in the browser
@@ -90,7 +93,7 @@ export default function SearchBuilder() {
         }
       }
     }
-    
+
     // Default options
     return {
       fileTypes: {
@@ -112,28 +115,80 @@ export default function SearchBuilder() {
       useGoogleScholar: false
     };
   });
-  
+
+  // Check if we're editing a saved search
+  const isEditMode = router.query.edit === 'true';
+
   // Initialize concepts state with localStorage if available
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const savedConcepts = localStorage.getItem('searchBuilderConcepts');
-      if (savedConcepts) {
+      // Check if we're editing a saved search
+      const editSearchData = localStorage.getItem('editSearchData');
+      if (isEditMode && editSearchData) {
         try {
-          setConcepts(JSON.parse(savedConcepts));
+          const searchData = JSON.parse(editSearchData);
+
+          // Try to parse the filters to extract concepts and options
+          if (searchData.filters) {
+            // If filters contain concepts, load them
+            if (searchData.filters.concepts) {
+              setConcepts(searchData.filters.concepts);
+            }
+
+            // If filters contain options, load them
+            if (searchData.filters.options) {
+              setOptions(searchData.filters.options);
+            } else {
+              // Try to extract options from filters
+              const newOptions = { ...options };
+
+              if (searchData.filters.fileTypes) {
+                newOptions.fileTypes = {
+                  pdf: searchData.filters.fileTypes.includes('pdf'),
+                  doc: searchData.filters.fileTypes.includes('doc'),
+                  ppt: searchData.filters.fileTypes.includes('ppt'),
+                  html: searchData.filters.fileTypes.includes('html')
+                };
+              }
+
+              if (searchData.filters.includeGuidelineTerms !== undefined) {
+                newOptions.includeGuidelineTerms = searchData.filters.includeGuidelineTerms;
+              }
+
+              if (searchData.filters.trustedDomains) {
+                newOptions.trustedDomains = searchData.filters.trustedDomains;
+              }
+
+              setOptions(newOptions);
+            }
+          }
+
+          // Clear the edit data after loading
+          localStorage.removeItem('editSearchData');
         } catch (e) {
-          console.error('Failed to parse saved concepts:', e);
+          console.error('Failed to parse edit search data:', e);
+        }
+      } else {
+        // Normal loading from localStorage
+        const savedConcepts = localStorage.getItem('searchBuilderConcepts');
+        if (savedConcepts) {
+          try {
+            setConcepts(JSON.parse(savedConcepts));
+          } catch (e) {
+            console.error('Failed to parse saved concepts:', e);
+          }
         }
       }
     }
-  }, []);
-  
+  }, [router.isReady, isEditMode]);
+
   // Save options to localStorage whenever they change
   useEffect(() => {
     if (typeof window !== 'undefined') {
       localStorage.setItem('searchBuilderOptions', JSON.stringify(options));
     }
   }, [options]);
-  
+
   // Save concepts to localStorage whenever they change
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -143,7 +198,7 @@ export default function SearchBuilder() {
 
   // State for domain input
   const [domainInput, setDomainInput] = useState<string>('');
-  
+
   // Active tab state
   const [activeTab, setActiveTab] = useState('build');
 
@@ -151,21 +206,21 @@ export default function SearchBuilder() {
   const generateSearchQuery = (specificDomain?: string, isScholar = false): string => {
     // Create the base query using concepts
     let query = '';
-    
+
     // Filter out empty concepts
     const nonEmptyConcepts = concepts.filter(concept => concept.terms.length > 0);
-    
+
     // Join each concept group with AND
     nonEmptyConcepts.forEach((concept, conceptIndex) => {
       if (conceptIndex > 0 && query.length > 0) {
         query += ' AND ';
       }
-      
+
       // If there are multiple terms in the concept, wrap them in parentheses
       if (concept.terms.length > 1) {
         query += '(';
       }
-      
+
       // Join terms within a concept with OR
       concept.terms.forEach((term, termIndex) => {
         if (termIndex > 0) {
@@ -173,47 +228,47 @@ export default function SearchBuilder() {
         }
         query += `"${term}"`;
       });
-      
+
       // Close the parentheses for multiple terms
       if (concept.terms.length > 1) {
         query += ')';
       }
     });
-    
+
     // Add clinical guideline terms if enabled (regardless of which concept)
     if (options.includeGuidelineTerms && nonEmptyConcepts.length > 0) {
       query += ` AND (${GUIDELINE_TERMS.join(' OR ')})`;
     }
-    
+
     // Add file type restrictions
     const activeFileTypes = Object.entries(options.fileTypes)
       .filter(([_, isActive]) => isActive)
       .map(([type]) => type);
-      
+
     if (activeFileTypes.length > 0) {
       if (query.length > 0) query += ' ';
       query += activeFileTypes.map(fileType => `filetype:${fileType}`).join(' OR ');
     }
-    
+
     // Add site restriction for domain-specific searches
     if (specificDomain && !isScholar) {
       if (query.length > 0) query += ' ';
       query += `site:${specificDomain}`;
     }
-    
+
     // Add Google Scholar specific modifications if needed
     if (isScholar) {
       // No site restriction needed, Google Scholar is accessed directly via its URL
       // We could add scholar-specific modifiers here if needed
     }
-    
+
     return query;
   };
 
   // Generate all search queries based on current options
   const generateAllSearchQueries = (): { query: string; type: 'domain' | 'broad' | 'scholar'; domain?: string }[] => {
     const queries: { query: string; type: 'domain' | 'broad' | 'scholar'; domain?: string }[] = [];
-    
+
     // Add domain-specific queries
     if (options.trustedDomains.length > 0) {
       options.trustedDomains.forEach(domain => {
@@ -223,7 +278,7 @@ export default function SearchBuilder() {
         }
       });
     }
-    
+
     // Add broad search query if enabled
     if (options.useBroadSearch) {
       const query = generateSearchQuery();
@@ -231,7 +286,7 @@ export default function SearchBuilder() {
         queries.push({ query, type: 'broad' });
       }
     }
-    
+
     // Add Google Scholar query if enabled
     if (options.useGoogleScholar) {
       const query = generateSearchQuery(undefined, true);
@@ -239,15 +294,15 @@ export default function SearchBuilder() {
         queries.push({ query, type: 'scholar' });
       }
     }
-    
+
     return queries;
   };
 
   // Handle adding a term to a concept
   const handleAddTerm = () => {
     if (termInput && !concepts.find(c => c.id === activeConceptId)?.terms.includes(termInput)) {
-      setConcepts(concepts.map(concept => 
-        concept.id === activeConceptId 
+      setConcepts(concepts.map(concept =>
+        concept.id === activeConceptId
           ? { ...concept, terms: [...concept.terms, termInput] }
           : concept
       ));
@@ -257,8 +312,8 @@ export default function SearchBuilder() {
 
   // Handle removing a term from a concept
   const handleRemoveTerm = (conceptId: ConceptId, term: string) => {
-    setConcepts(concepts.map(concept => 
-      concept.id === conceptId 
+    setConcepts(concepts.map(concept =>
+      concept.id === conceptId
         ? { ...concept, terms: concept.terms.filter(t => t !== term) }
         : concept
     ));
@@ -328,10 +383,10 @@ export default function SearchBuilder() {
   const handleExecuteSearch = (searchInfo: { query: string; type: 'domain' | 'broad' | 'scholar'; domain?: string }) => {
     const { query, type } = searchInfo;
     if (!query) return;
-    
+
     // Get the first active search engine
     let searchEngineUrl = '';
-    
+
     if (type === 'scholar') {
       searchEngineUrl = 'https://scholar.google.com/scholar?q=';
     } else if (options.searchEngines.bing) {
@@ -342,7 +397,7 @@ export default function SearchBuilder() {
       // Default to serper for API searches
       searchEngineUrl = 'https://www.google.com/search?q=';
     }
-    
+
     if (searchEngineUrl) {
       window.open(`${searchEngineUrl}${encodeURIComponent(query)}`, '_blank');
     } else {
@@ -391,10 +446,10 @@ export default function SearchBuilder() {
   const handleAPISearchClick = () => {
     const queries = generateAllSearchQueries();
     if (queries.length === 0) return;
-    
+
     router.push({
       pathname: '/search-results',
-      query: { 
+      query: {
         q: queries[0].query,
         max: options.maxResultsPerEngine,
         dedup: 'true', // Enable deduplication
@@ -405,17 +460,47 @@ export default function SearchBuilder() {
     });
   };
 
+  // Prepare data for saving search
+  const prepareSearchData = () => {
+    const queries = generateAllSearchQueries();
+    if (queries.length === 0) return null;
+
+    return {
+      query: queries[0].query,
+      source: options.searchEngines.serper ? 'Serper' :
+              options.searchEngines.serpapi ? 'SerpAPI' :
+              options.searchEngines.bing ? 'Bing' :
+              options.searchEngines.duckduckgo ? 'DuckDuckGo' : 'Google',
+      filters: {
+        fileTypes: Object.entries(options.fileTypes)
+          .filter(([_, isActive]) => isActive)
+          .map(([type]) => type),
+        includeGuidelineTerms: options.includeGuidelineTerms,
+        trustedDomains: options.trustedDomains,
+        maxResults: options.maxResultsPerEngine,
+        concepts: concepts,
+        options: options
+      }
+    };
+  };
+
+  // Handle search saved callback
+  const handleSearchSaved = () => {
+    // Show a success message or redirect to saved searches
+    alert('Search strategy saved successfully!');
+  };
+
   // Add a new function to handle executing all searches via API
   const handleExecuteAllSearchesClick = () => {
     // Get all search queries
     const queries = generateAllSearchQueries();
     if (queries.length === 0) return;
-    
+
     // Redirect to search results for the first query
     // (we'll implement multi-query execution in the future)
     router.push({
       pathname: '/search-results',
-      query: { 
+      query: {
         q: queries[0].query,
         max: options.maxResultsPerEngine,
         dedup: 'true', // Enable deduplication
@@ -441,7 +526,7 @@ export default function SearchBuilder() {
             Preview
           </TabsTrigger>
         </TabsList>
-        
+
         <TabsContent value="build" className="space-y-4 mt-4">
           <Card>
             <CardHeader>
@@ -462,7 +547,7 @@ export default function SearchBuilder() {
                     </TabsTrigger>
                   ))}
                 </TabsList>
-                
+
                 {concepts.map(concept => (
                   <TabsContent key={concept.id} value={concept.id} className="space-y-4 mt-4">
                     <div className="space-y-2">
@@ -487,12 +572,12 @@ export default function SearchBuilder() {
                         </Button>
                       </div>
                     </div>
-                    
+
                     {concept.terms.length > 0 ? (
                       <div className="flex flex-wrap gap-2 mt-2">
                         {concept.terms.map((term) => (
-                          <Chip 
-                            key={term} 
+                          <Chip
+                            key={term}
                             className={`px-3 py-1 ${
                               concept.id === 'population' ? 'bg-blue-100 text-blue-800' :
                               concept.id === 'interest' ? 'bg-green-100 text-green-800' :
@@ -529,7 +614,7 @@ export default function SearchBuilder() {
               </Tabs>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardHeader>
               <CardTitle>Search Enhancement</CardTitle>
@@ -551,7 +636,7 @@ export default function SearchBuilder() {
               </p>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardHeader>
               <CardTitle>Search Options</CardTitle>
@@ -597,9 +682,9 @@ export default function SearchBuilder() {
                   </div>
                 </div>
               </div>
-              
+
               <Separator />
-              
+
               <div className="space-y-2">
                 <h3 className="text-sm font-medium">Trusted Domains & Search Types</h3>
                 <div className="flex space-x-2">
@@ -618,7 +703,7 @@ export default function SearchBuilder() {
                     Add
                   </Button>
                 </div>
-                
+
                 {options.trustedDomains.length > 0 ? (
                   <div className="flex flex-wrap gap-2 mt-2">
                     {options.trustedDomains.map((domain) => (
@@ -640,7 +725,7 @@ export default function SearchBuilder() {
                     Add trusted domains to limit your search to specific websites.
                   </p>
                 )}
-                
+
                 <div className="space-y-2 mt-4">
                   <div className="flex items-center space-x-2">
                     <Switch
@@ -655,7 +740,7 @@ export default function SearchBuilder() {
                       Include broad search (without domain restrictions)
                     </Label>
                   </div>
-                  
+
                   <div className="flex items-center space-x-2">
                     <Switch
                       id="google-scholar"
@@ -671,9 +756,9 @@ export default function SearchBuilder() {
                   </div>
                 </div>
               </div>
-              
+
               <Separator />
-              
+
               <div className="space-y-2">
                 <h3 className="text-sm font-medium">Search Engines</h3>
                 <div className="grid grid-cols-3 gap-4">
@@ -711,9 +796,9 @@ export default function SearchBuilder() {
                   </div>
                 </div>
               </div>
-              
+
               <Separator />
-              
+
               <div className="space-y-2">
                 <h3 className="text-sm font-medium">Max Results Per Engine</h3>
                 <Input
@@ -727,7 +812,7 @@ export default function SearchBuilder() {
               </div>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardHeader>
               <CardTitle>Execute Searches</CardTitle>
@@ -737,11 +822,11 @@ export default function SearchBuilder() {
             </CardHeader>
             <CardContent>
               <p className="text-sm text-gray-600 mb-4">
-                Execute your search {options.trustedDomains.length > 1 ? 
-                  `across all ${options.trustedDomains.length} trusted domains` : 
+                Execute your search {options.trustedDomains.length > 1 ?
+                  `across all ${options.trustedDomains.length} trusted domains` :
                   'query'} using our API with deduplication enabled.
               </p>
-              
+
               {!hasAnyTerms && (
                 <Alert variant="warning" className="mb-4">
                   <AlertCircle className="h-4 w-4" />
@@ -751,7 +836,7 @@ export default function SearchBuilder() {
                   </AlertDescription>
                 </Alert>
               )}
-              
+
               {options.trustedDomains.length === 0 && (
                 <Alert variant="warning" className="mb-4">
                   <AlertCircle className="h-4 w-4" />
@@ -763,8 +848,8 @@ export default function SearchBuilder() {
               )}
             </CardContent>
             <CardFooter>
-              <Button 
-                className="w-full" 
+              <Button
+                className="w-full"
                 onClick={handleExecuteAllSearchesClick}
                 disabled={!hasAnyTerms}
                 size="lg"
@@ -776,7 +861,7 @@ export default function SearchBuilder() {
             </CardFooter>
           </Card>
         </TabsContent>
-        
+
         <TabsContent value="preview" className="space-y-4 mt-4">
           <Card>
             <CardHeader>
@@ -794,18 +879,18 @@ export default function SearchBuilder() {
                       {generateSearchQuery() || 'No query generated yet. Add concepts and terms to get started.'}
                     </code>
                   </div>
-                  
+
                   <div className="flex space-x-2">
-                    <Button 
+                    <Button
                       onClick={handleCopyQueryClick}
                       disabled={!hasAnyTerms}
                     >
                       <Copy className="h-4 w-4 mr-2" />
                       Copy Query
                     </Button>
-                    
-                    <Button 
-                      variant="default" 
+
+                    <Button
+                      variant="default"
                       onClick={handleExecuteSearchClick}
                       disabled={!hasAnyTerms}
                     >
@@ -818,7 +903,7 @@ export default function SearchBuilder() {
                 // Multiple queries (one per domain)
                 <div className="space-y-6">
                   <div className="flex justify-end">
-                    <Button 
+                    <Button
                       onClick={handleCopyAllQueries}
                       disabled={!hasAnyTerms}
                       variant="outline"
@@ -828,7 +913,7 @@ export default function SearchBuilder() {
                       Copy All Queries
                     </Button>
                   </div>
-                  
+
                   {generateAllSearchQueries().map(({ query, type, domain }, index) => {
                     return (
                       <div key={query} className="space-y-2">
@@ -838,9 +923,9 @@ export default function SearchBuilder() {
                             {query}
                           </code>
                         </div>
-                        
+
                         <div className="flex space-x-2">
-                          <Button 
+                          <Button
                             onClick={() => handleExecuteSearch({ query, type })}
                             size="sm"
                           >
@@ -848,7 +933,7 @@ export default function SearchBuilder() {
                             Execute
                           </Button>
                         </div>
-                        
+
                         {index < generateAllSearchQueries().length - 1 && <Separator className="my-4" />}
                       </div>
                     );
@@ -857,7 +942,7 @@ export default function SearchBuilder() {
               )}
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardHeader>
               <CardTitle>Search Strategy Preview</CardTitle>
@@ -872,9 +957,9 @@ export default function SearchBuilder() {
                   <div className="flex flex-wrap gap-1">
                     {concept.terms.length > 0 ? (
                       concept.terms.map((term) => (
-                        <Badge 
-                          key={term} 
-                          variant="outline" 
+                        <Badge
+                          key={term}
+                          variant="outline"
                           className={`mr-1 ${
                             concept.id === 'population' ? 'border-blue-300' :
                             concept.id === 'interest' ? 'border-green-300' :
@@ -887,7 +972,7 @@ export default function SearchBuilder() {
                     ) : (
                       <p className="text-sm text-gray-500">No {concept.name.toLowerCase()} terms specified</p>
                     )}
-                    
+
                     {concept.id === 'context' && options.includeGuidelineTerms && (
                       <>
                         {concept.terms.length > 0 && <span className="text-sm text-gray-500">+</span>}
@@ -895,11 +980,11 @@ export default function SearchBuilder() {
                       </>
                     )}
                   </div>
-                  
+
                   {concept.id !== 'context' && <Separator />}
                 </div>
               ))}
-              
+
               <div className="space-y-2">
                 <h3 className="text-sm font-medium">File Types</h3>
                 <div className="flex flex-wrap gap-1">
@@ -912,9 +997,9 @@ export default function SearchBuilder() {
                     ))}
                 </div>
               </div>
-              
+
               <Separator />
-              
+
               <div className="space-y-2">
                 <h3 className="text-sm font-medium">Search Types</h3>
                 <div className="flex flex-wrap gap-1">
@@ -937,7 +1022,7 @@ export default function SearchBuilder() {
                     <p className="text-sm text-gray-500">No search types selected</p>
                   )}
                 </div>
-                
+
                 {generateAllSearchQueries().length > 1 && (
                   <p className="text-sm text-gray-600 mt-2">
                     <AlertCircle className="h-4 w-4 inline mr-1" />
@@ -945,9 +1030,9 @@ export default function SearchBuilder() {
                   </p>
                 )}
               </div>
-              
+
               <Separator />
-              
+
               <div className="space-y-2">
                 <h3 className="text-sm font-medium">Search Engines</h3>
                 <div className="flex flex-wrap gap-1">
@@ -960,28 +1045,28 @@ export default function SearchBuilder() {
                     ))}
                 </div>
               </div>
-              
+
               <div className="mt-2">
                 <p className="text-sm text-gray-600">
                   Max results per engine: <strong>{options.maxResultsPerEngine}</strong>
                 </p>
               </div>
             </CardContent>
-            <CardFooter>
+            <CardFooter className="flex flex-col gap-4">
               {options.trustedDomains.length <= 1 ? (
                 <div className="w-full space-y-2">
                   <div className="flex space-x-2">
-                    <Button 
-                      className="flex-1" 
+                    <Button
+                      className="flex-1"
                       onClick={handleExecuteSearchClick}
                       disabled={!hasAnyTerms}
                     >
                       <ExternalLink className="h-4 w-4 mr-2" />
                       Search in Browser
                     </Button>
-                    
-                    <Button 
-                      className="flex-1" 
+
+                    <Button
+                      className="flex-1"
                       onClick={handleAPISearchClick}
                       disabled={!hasAnyTerms}
                       variant="default"
@@ -992,8 +1077,8 @@ export default function SearchBuilder() {
                   </div>
                 </div>
               ) : (
-                <Button 
-                  className="w-full" 
+                <Button
+                  className="w-full"
                   onClick={handleExecuteAllSearchesClick}
                   disabled={!hasAnyTerms}
                   variant="default"
@@ -1002,10 +1087,33 @@ export default function SearchBuilder() {
                   Execute All Searches
                 </Button>
               )}
+
+              {/* Save and View Saved Searches */}
+              <div className="flex flex-wrap gap-2 justify-center w-full">
+                {hasAnyTerms && (
+                  <>
+                    {/* Save Search Dialog */}
+                    {prepareSearchData() && (
+                      <SaveSearchDialog
+                        {...prepareSearchData()}
+                        onSaved={handleSearchSaved}
+                      />
+                    )}
+
+                    {/* Link to Saved Searches */}
+                    <Link href="/saved-searches" passHref>
+                      <Button variant="outline" className="gap-2">
+                        <BookmarkIcon className="h-4 w-4" />
+                        Saved Searches
+                      </Button>
+                    </Link>
+                  </>
+                )}
+              </div>
             </CardFooter>
           </Card>
         </TabsContent>
       </Tabs>
     </div>
   );
-} 
+}
