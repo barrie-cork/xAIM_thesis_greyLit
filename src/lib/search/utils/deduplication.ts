@@ -9,44 +9,44 @@ export function normalizeUrl(url: string): string {
   try {
     // Create URL object for parsing
     const urlObj = new URL(url);
-    
+
     // Convert hostname to lowercase
     const hostname = urlObj.hostname.toLowerCase();
-    
+
     // Remove www. prefix if present
     const cleanHostname = hostname.startsWith('www.') ? hostname.substring(4) : hostname;
-    
+
     // Clean path - remove trailing slash
     let path = urlObj.pathname;
-    if (path.endsWith('/') && path.length > 1) {
+    if (path.endsWith('/')) {
       path = path.slice(0, -1);
     }
-    
+
     // Normalize path to lowercase in case of case-insensitive servers
     path = path.toLowerCase();
-    
+
     // Remove common tracking parameters and sessions
     const searchParams = new URLSearchParams(urlObj.search);
     const paramsToRemove = [
       'utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term',
       'fbclid', 'gclid', 'msclkid', 'ref', 'source', 'session', '_ga'
     ];
-    
+
     paramsToRemove.forEach(param => {
       if (searchParams.has(param)) {
         searchParams.delete(param);
       }
     });
-    
+
     // Sort remaining params for consistent ordering
     const remainingParams = Array.from(searchParams.entries())
       .sort((a, b) => a[0].localeCompare(b[0]));
-    
+
     // Build search string (if any params remain)
-    const search = remainingParams.length > 0 
+    const search = remainingParams.length > 0
       ? '?' + new URLSearchParams(remainingParams).toString()
       : '';
-    
+
     // Rebuild normalized URL without protocol (protocol doesn't affect content identity)
     return `${cleanHostname}${path}${search}`;
   } catch (error) {
@@ -65,16 +65,16 @@ export function normalizeUrl(url: string): string {
 export function levenshteinDistance(a: string, b: string): number {
   // Create matrix of size (a.length+1) x (b.length+1)
   const matrix = Array(a.length + 1).fill(null).map(() => Array(b.length + 1).fill(null));
-  
+
   // Fill the first row and column
   for (let i = 0; i <= a.length; i++) {
     matrix[i][0] = i;
   }
-  
+
   for (let j = 0; j <= b.length; j++) {
     matrix[0][j] = j;
   }
-  
+
   // Fill the rest of the matrix
   for (let i = 1; i <= a.length; i++) {
     for (let j = 1; j <= b.length; j++) {
@@ -86,7 +86,7 @@ export function levenshteinDistance(a: string, b: string): number {
       );
     }
   }
-  
+
   return matrix[a.length][b.length];
 }
 
@@ -99,10 +99,10 @@ export function levenshteinDistance(a: string, b: string): number {
 export function calculateSimilarity(a: string, b: string): number {
   if (a === b) return 1.0;
   if (a.length === 0 || b.length === 0) return 0.0;
-  
+
   const distance = levenshteinDistance(a, b);
   const maxLength = Math.max(a.length, b.length);
-  
+
   return 1 - distance / maxLength;
 }
 
@@ -151,40 +151,50 @@ export function deduplicateResults(
     strictUrlMatching = false,
     ignoredDomains = []
   } = options;
-  
+
   // Initialize results
   const uniqueResults: SearchResult[] = [];
   const duplicateGroups: DeduplicationResult['duplicateGroups'] = [];
-  
+
   // Track normalized URLs for exact matches
   const normalizedUrls = new Map<string, number>();
-  
+
   // Process each result
   results.forEach(result => {
     // Normalize the URL
     const normalizedUrl = normalizeUrl(result.url);
-    
+
     // Check if current domain should be ignored for deduplication
     try {
       const domain = new URL(result.url).hostname;
-      if (ignoredDomains.some(ignoredDomain => domain.includes(ignoredDomain))) {
+      const shouldIgnore = ignoredDomains.some(ignoredDomain => domain.includes(ignoredDomain));
+
+      if (shouldIgnore) {
+        // For ignored domains, we still want to check for exact URL duplicates
+        // but we'll add it to the results regardless
+        const isDuplicate = normalizedUrls.has(normalizedUrl);
+
+        if (!isDuplicate) {
+          normalizedUrls.set(normalizedUrl, uniqueResults.length);
+        }
+
         uniqueResults.push(result);
-        return; // Skip deduplication for ignored domains
+        return; // Skip further deduplication for ignored domains
       }
     } catch (e) {
       // If URL parsing fails, continue with deduplication
     }
-    
+
     // Check for exact URL match first
     if (normalizedUrls.has(normalizedUrl)) {
       const existingIndex = normalizedUrls.get(normalizedUrl)!;
       const existingResult = uniqueResults[existingIndex];
-      
+
       // Add to duplicate group
-      const duplicateGroup = duplicateGroups.find(group => 
+      const duplicateGroup = duplicateGroups.find(group =>
         group.kept === existingResult
       );
-      
+
       if (duplicateGroup) {
         duplicateGroup.removed.push({
           result,
@@ -201,10 +211,10 @@ export function deduplicateResults(
           }]
         });
       }
-      
+
       return; // Skip this result as it's a duplicate
     }
-    
+
     // If not exact URL match, check for title similarity
     if (!strictUrlMatching) {
       // Find potential duplicate by title similarity
@@ -213,19 +223,19 @@ export function deduplicateResults(
         try {
           const existingDomain = new URL(existingResult.url).hostname;
           const currentDomain = new URL(result.url).hostname;
-          
+
           // If domains are completely different, still check title similarity
           // but with a higher threshold for cross-domain duplicates
           const similarity = calculateSimilarity(
             existingResult.title.toLowerCase(),
             result.title.toLowerCase()
           );
-          
+
           // Use a stricter threshold for cross-domain duplicates
           const threshold = existingDomain === currentDomain
             ? titleSimilarityThreshold
             : titleSimilarityThreshold + 0.1;
-          
+
           return similarity >= threshold;
         } catch (e) {
           // If URL parsing fails, use default threshold
@@ -233,23 +243,23 @@ export function deduplicateResults(
             existingResult.title.toLowerCase(),
             result.title.toLowerCase()
           );
-          
+
           return similarity >= titleSimilarityThreshold;
         }
       });
-      
+
       if (potentialDuplicateIndex !== -1) {
         const existingResult = uniqueResults[potentialDuplicateIndex];
         const similarity = calculateSimilarity(
           existingResult.title.toLowerCase(),
           result.title.toLowerCase()
         );
-        
+
         // Add to duplicate group
-        const duplicateGroup = duplicateGroups.find(group => 
+        const duplicateGroup = duplicateGroups.find(group =>
           group.kept === existingResult
         );
-        
+
         if (duplicateGroup) {
           duplicateGroup.removed.push({
             result,
@@ -266,18 +276,18 @@ export function deduplicateResults(
             }]
           });
         }
-        
+
         return; // Skip this result as it's a duplicate
       }
     }
-    
+
     // If we reached here, this is a unique result
     normalizedUrls.set(normalizedUrl, uniqueResults.length);
     uniqueResults.push(result);
   });
-  
+
   return {
     uniqueResults,
     duplicateGroups
   };
-} 
+}
