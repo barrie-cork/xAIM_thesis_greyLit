@@ -4,8 +4,14 @@ export * from './provider';
 export * from './base-provider';
 export * from './factory';
 export * from './search-service';
+export * from './search-service-refactored';
 export * from './utils';
 export { DeduplicationService } from './deduplication';
+
+// Export new services
+export * from './services/storage-service';
+export * from './services/deduplication-service';
+export * from './services/background-processor';
 
 // Export providers
 export * from './providers/serper';
@@ -44,5 +50,10 @@ export const DEFAULT_SEARCH_CONFIG = {
     titleSimilarityThreshold: 0.85, // 85% title similarity is considered a duplicate
     strictUrlMatching: false, // Allow title-based deduplication
     ignoredDomains: [] // No domains are ignored by default
+  },
+
+  // Default storage service settings
+  storage: {
+    // No specific settings needed for now
   }
-}; 
+};
