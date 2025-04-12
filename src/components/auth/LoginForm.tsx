@@ -1,3 +1,5 @@
+"use client"
+
 import React from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
@@ -28,10 +30,22 @@ export const LoginForm = () => {
         throw error
       }
 
-      router.push('/dashboard')
+      // Redirect to home page instead of dashboard since dashboard doesn't exist yet
+      router.push('/')
       router.refresh()
     } catch (error) {
-      setError(error instanceof Error ? error.message : 'An error occurred')
+      console.error('Login error:', error)
+
+      // Check for specific error types
+      if (error instanceof Error) {
+        if (error.message.includes('Invalid login credentials')) {
+          setError('Invalid email or password. If you just registered, please try again.')
+        } else {
+          setError(error.message)
+        }
+      } else {
+        setError('An error occurred during login')
+      }
     } finally {
       setIsLoading(false)
     }
@@ -79,4 +93,4 @@ export const LoginForm = () => {
       </Button>
     </form>
   )
-} 
+}

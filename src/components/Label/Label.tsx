@@ -1,3 +1,5 @@
+"use client"
+
 import * as React from 'react';
 import { cn } from '../../utils/cn';
 
@@ -28,4 +30,4 @@ export const Label: React.FC<LabelProps> = ({
       {required && <span className="text-red-500 ml-1">*</span>}
     </label>
   );
-}; 
+};

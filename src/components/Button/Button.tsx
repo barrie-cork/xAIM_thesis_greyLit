@@ -1,3 +1,5 @@
+"use client"
+
 import React from 'react';
 import { cn } from '@/utils/cn';
 
@@ -68,4 +70,4 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       </button>
     );
   }
-); 
+);

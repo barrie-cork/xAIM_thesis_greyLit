@@ -13,6 +13,7 @@ export const RegisterForm = () => {
   const [confirmPassword, setConfirmPassword] = React.useState('')
   const [error, setError] = React.useState<string | null>(null)
   const [isLoading, setIsLoading] = React.useState(false)
+  const [registrationSuccess, setRegistrationSuccess] = React.useState(false)
   const router = useRouter()
   const supabase = createClient()
 
@@ -28,7 +29,7 @@ export const RegisterForm = () => {
     }
 
     try {
-      const { error } = await supabase.auth.signUp({
+      const { error, data } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -40,13 +41,50 @@ export const RegisterForm = () => {
         throw error
       }
 
-      // Show success message or redirect to verification page
-      router.push('/auth/verify-email')
+      // With auto-confirm enabled, the user should be automatically confirmed
+      setRegistrationSuccess(true)
+
+      // If auto-confirm is enabled, we can redirect directly to login
+      // Otherwise, we'll show a success message with instructions
     } catch (error) {
-      setError(error instanceof Error ? error.message : 'An error occurred')
+      console.error('Registration error:', error)
+      if (error instanceof Error && error.message.includes('confirmation email')) {
+        // Handle email sending error specifically
+        setError('Your account was created, but there was an issue sending the confirmation email. You can still sign in.')
+        setRegistrationSuccess(true)
+      } else {
+        setError(error instanceof Error ? error.message : 'An error occurred during registration')
+      }
     } finally {
       setIsLoading(false)
     }
+  }
+
+  if (registrationSuccess) {
+    return (
+      <div className="space-y-4">
+        <div className="p-4 bg-green-50 border border-green-200 rounded-md">
+          <h3 className="text-lg font-medium text-green-800">Account Created Successfully</h3>
+          <p className="mt-2 text-sm text-green-700">
+            Your account has been created successfully and is ready to use.
+          </p>
+          {error && (
+            <p className="mt-2 text-sm text-amber-600">
+              {error}
+            </p>
+          )}
+          <div className="mt-4">
+            <Button
+              type="button"
+              className="mr-2"
+              onClick={() => router.push('/auth/login')}
+            >
+              Go to Login
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -90,7 +128,7 @@ export const RegisterForm = () => {
           error={error}
         />
       </div>
-      {error && (
+      {error && !registrationSuccess && (
         <p className="text-sm text-red-500" role="alert">
           {error}
         </p>
@@ -104,4 +142,4 @@ export const RegisterForm = () => {
       </Button>
     </form>
   )
-} 
+}

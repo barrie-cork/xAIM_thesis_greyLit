@@ -1,3 +1,5 @@
+"use client"
+
 import React, { useState } from 'react';
 import {
   Dialog,
@@ -91,8 +93,8 @@ export default function SaveSearchDialog({ query, source, filters, onSaved }: Sa
           )}
         </div>
         <DialogFooter>
-          <Button 
-            type="submit" 
+          <Button
+            type="submit"
             onClick={handleSave}
             disabled={saveSearchMutation.isLoading}
           >

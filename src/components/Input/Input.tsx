@@ -1,3 +1,5 @@
+"use client"
+
 import React from 'react';
 import { cn } from '@/utils/cn';
 
@@ -135,4 +137,4 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
       </div>
     );
   }
-); 
+);

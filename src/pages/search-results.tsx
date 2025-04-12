@@ -1,3 +1,5 @@
+"use client"
+
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
@@ -41,7 +43,7 @@ export default function SearchResults() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('results');
-  
+
   // New state for batch search
   const [currentBatchIndex, setCurrentBatchIndex] = useState(0);
   const isBatchSearch = router.query.batch === 'true';
@@ -72,7 +74,7 @@ export default function SearchResults() {
           query_type: router.query.query_type || 'broad',
           batchId: router.query.batch === 'true' ? router.query.q : undefined,
           batchIndex: 0,
-          batchQueries: router.query.batch === 'true' && router.query.batch_size ? 
+          batchQueries: router.query.batch === 'true' && router.query.batch_size ?
             Array(parseInt(router.query.batch_size as string, 10)).fill(query) : undefined
         }),
       });
@@ -95,7 +97,7 @@ export default function SearchResults() {
   // Navigate to the next batch search
   const goToNextBatchSearch = () => {
     if (!isBatchSearch || currentBatchIndex >= batchSize - 1) return;
-    
+
     // Not implemented yet - would need to have all queries stored
     alert('Batch navigation functionality will be implemented in a future version');
   };
@@ -103,14 +105,14 @@ export default function SearchResults() {
   // Navigate to the previous batch search
   const goToPreviousBatchSearch = () => {
     if (!isBatchSearch || currentBatchIndex <= 0) return;
-    
+
     // Not implemented yet - would need to have all queries stored
     alert('Batch navigation functionality will be implemented in a future version');
   };
 
   // Calculate total results across all providers
   const totalResults = results.reduce((total, response) => total + response.results.length, 0);
-  
+
   // Calculate total deduplication stats
   const deduplicationStats = results.reduce(
     (stats, response) => {
@@ -144,10 +146,10 @@ export default function SearchResults() {
                     Back to Search Builder
                   </Button>
                 </Link>
-                
+
                 <h1 className="text-2xl font-bold ml-4">Search Results</h1>
               </div>
-              
+
               {isBatchSearch && (
                 <div className="flex items-center space-x-2">
                   <Button
@@ -158,11 +160,11 @@ export default function SearchResults() {
                   >
                     <ArrowLeftIcon className="h-4 w-4" />
                   </Button>
-                  
+
                   <span className="text-sm font-medium">
                     Search {currentBatchIndex + 1} of {batchSize}
                   </span>
-                  
+
                   <Button
                     variant="outline"
                     size="sm"
@@ -174,7 +176,7 @@ export default function SearchResults() {
                 </div>
               )}
             </div>
-            
+
             {router.query.q && (
               <Card>
                 <CardHeader className="pb-2">
@@ -183,16 +185,16 @@ export default function SearchResults() {
                     <div className="flex space-x-2">
                       {router.query.query_type && (
                         <Badge variant={
-                          router.query.query_type === 'scholar' ? 'secondary' : 
-                          router.query.query_type === 'domain' ? 'outline' : 
+                          router.query.query_type === 'scholar' ? 'secondary' :
+                          router.query.query_type === 'domain' ? 'outline' :
                           'default'
                         } className={
-                          router.query.query_type === 'scholar' ? 'ml-2 bg-purple-100 text-purple-800' : 
-                          router.query.query_type === 'domain' ? 'ml-2 bg-blue-100 text-blue-800' : 
+                          router.query.query_type === 'scholar' ? 'ml-2 bg-purple-100 text-purple-800' :
+                          router.query.query_type === 'domain' ? 'ml-2 bg-blue-100 text-blue-800' :
                           'ml-2 bg-green-100 text-green-800'
                         }>
-                          {router.query.query_type === 'scholar' ? 'Google Scholar' : 
-                           router.query.query_type === 'domain' ? 'Domain-specific' : 
+                          {router.query.query_type === 'scholar' ? 'Google Scholar' :
+                           router.query.query_type === 'domain' ? 'Domain-specific' :
                            'Broad Search'}
                         </Badge>
                       )}
@@ -259,7 +261,7 @@ export default function SearchResults() {
                       </AlertDescription>
                     </Alert>
                   )}
-                  
+
                   {deduplicationStats.duplicatesRemoved > 0 && (
                     <Alert>
                       <Filter className="h-4 w-4" />
@@ -269,7 +271,7 @@ export default function SearchResults() {
                       </AlertDescription>
                     </Alert>
                   )}
-                  
+
                   <div className="space-y-4">
                     {results.map((response, providerIndex) => (
                       <div key={providerIndex} className="space-y-4">
@@ -281,7 +283,7 @@ export default function SearchResults() {
                             {response.results.length} results
                           </Badge>
                         </div>
-                        
+
                         {response.results.length === 0 ? (
                           <Alert>
                             <AlertCircle className="h-4 w-4" />
@@ -295,7 +297,7 @@ export default function SearchResults() {
                             {response.results.map((result, index) => (
                               <Card key={index}>
                                 <CardHeader className="py-3">
-                                  <a 
+                                  <a
                                     href={result.url}
                                     target="_blank"
                                     rel="noopener noreferrer"
@@ -328,7 +330,7 @@ export default function SearchResults() {
                             ))}
                           </div>
                         )}
-                        
+
                         {providerIndex < results.length - 1 && <Separator className="my-6" />}
                       </div>
                     ))}
@@ -352,18 +354,18 @@ export default function SearchResults() {
                         <div className="text-blue-600 font-medium mb-1">Current Search</div>
                         <div className="text-2xl font-bold">{currentBatchIndex + 1}</div>
                       </div>
-                      
+
                       <div className="bg-blue-50 p-4 rounded-md">
                         <div className="text-blue-600 font-medium mb-1">Total Searches</div>
                         <div className="text-2xl font-bold">{batchSize}</div>
                       </div>
-                      
+
                       <div className="bg-blue-50 p-4 rounded-md">
                         <div className="text-blue-600 font-medium mb-1">Progress</div>
                         <div className="text-2xl font-bold">{Math.round(((currentBatchIndex + 1) / batchSize) * 100)}%</div>
                       </div>
                     </div>
-                    
+
                     <Alert className="bg-blue-50">
                       <AlertCircle className="h-4 w-4 text-blue-600" />
                       <AlertTitle className="text-blue-700">PRISMA Tracking Enabled</AlertTitle>
@@ -374,7 +376,7 @@ export default function SearchResults() {
                   </CardContent>
                 </Card>
               )}
-              
+
               <Card>
                 <CardHeader>
                   <CardTitle>Deduplication Statistics</CardTitle>
@@ -388,18 +390,18 @@ export default function SearchResults() {
                       <div className="text-green-600 font-medium mb-1">Original Results</div>
                       <div className="text-2xl font-bold">{deduplicationStats.originalCount}</div>
                     </div>
-                    
+
                     <div className="bg-blue-50 p-4 rounded-md">
                       <div className="text-blue-600 font-medium mb-1">Unique Results</div>
                       <div className="text-2xl font-bold">{deduplicationStats.uniqueCount}</div>
                     </div>
-                    
+
                     <div className="bg-purple-50 p-4 rounded-md">
                       <div className="text-purple-600 font-medium mb-1">Duplicates Removed</div>
                       <div className="text-2xl font-bold">{deduplicationStats.duplicatesRemoved}</div>
                     </div>
                   </div>
-                  
+
                   <Alert className={deduplicationStats.enabled ? "bg-green-50" : "bg-yellow-50"}>
                     {deduplicationStats.enabled ? (
                       <>
@@ -421,7 +423,7 @@ export default function SearchResults() {
                   </Alert>
                 </CardContent>
               </Card>
-              
+
               <Card>
                 <CardHeader>
                   <CardTitle>Provider Statistics</CardTitle>
@@ -468,4 +470,4 @@ export default function SearchResults() {
       </div>
     </>
   );
-} 
+}
