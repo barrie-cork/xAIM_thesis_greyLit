@@ -1,0 +1,11 @@
+[33mcommit 901a24d5b5345d1996625253dd65ab216dc858a4[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mrefactor-attempt[m[33m)[m
+Author: Barrie <112749825@umail.ucc.ie>
+Date:   Tue Apr 8 16:18:29 2025 +0100
+
+    Update task 5 status to completed and fix UI component exports
+
+ TASKS_STATUS.md            | 12 [32m+++++[m[31m-[m
+ src/components/ui/index.ts | 12 [32m+++[m[31m---[m
+ tasks/task_005.txt         | 97 [32m+++++++++++++++++++++++++++++++++++++++++++[m[31m---[m
+ tasks/tasks.json           | 94 [32m++++++++++++++++++++++++++++++++++++++[m[31m------[m
+ 4 files changed, 190 insertions(+), 25 deletions(-)

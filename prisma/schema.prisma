@@ -98,3 +98,5 @@ enum TagEnum {
   exclude
   maybe
 }
+
+// Add any additional models here if needed

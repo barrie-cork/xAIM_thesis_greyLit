@@ -9,7 +9,7 @@
 - **Framer Motion**: Animation library for interactive UI elements
 
 ### Backend & Data
-- **Supabase**: 
+- **Supabase**:
   - Authentication and user management
   - PostgreSQL database
   - Storage for exported reports and documents
@@ -21,10 +21,10 @@
 
 ## Data Architecture
 
-### MeSH Integration
-- Local MeSH dataset for term expansion
-- JSON-based storage format
-- Efficient lookup algorithms
+### Keyword Management
+- User-defined keywords for each concept
+- Efficient organization by concept
+- Simple and intuitive interface
 
 ### Database Structure
 - PostgreSQL via Supabase
@@ -39,7 +39,7 @@
 - Row Level Security for data access control
 
 ### Search Execution
-1. Local MeSH-based term expansion
+1. User-defined keyword organization by concept
 2. Structured query building
 3. External API integration for search execution
 4. Result normalization and storage

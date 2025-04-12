@@ -1,19 +1,15 @@
 # Task ID: 5
 # Title: Search Strategy Builder Implementation
 # Status: completed
-# Completion Date: 2024-07-10
 # Dependencies: 2, 4
 # Priority: high
-# Description: Implement the search strategy builder with MeSH integration
+# Description:
 # Details:
 Create the search strategy builder component:
 
 Core Features:
 - Implement structured concept input (Population, Interest, Context)
-- Create MeSH term integration:
-  - Set up local MeSH dataset
-  - Implement term expansion algorithm
-  - Create efficient lookup system
+- Allow users to add multiple keywords for each concept
 - Build query builder interface
 - Implement search engine selection
 - Add filetype filters
@@ -21,99 +17,47 @@ Core Features:
 - Implement search strategy saving
 
 Technical Implementation:
-- Set up MeSH data storage and access in Supabase
-- Create efficient term suggestion system using tRPC endpoints
-- Implement query validation with Zod schemas
-- Build search preview functionality with React
-- Create search history tracking in Supabase database
-
-Subtasks:
-5.1 - MeSH Dataset Acquisition and Processing
-    - Develop script to download MeSH RDF dataset from https://id.nlm.nih.gov/mesh/
-    - Process and convert RDF N-Triples format (mesh.nt.gz) to structured JSON
-    - Extract key fields: descriptor IDs, concept names, entry terms, and relationships
-    - Implement data validation for processed dataset integrity
-    - Create preprocessing pipeline for optimized storage format
-    - Develop compression strategy for efficient data transfer
-    - Build test suite to verify extraction accuracy
-    - Document dataset structure and metadata
-
-5.2 - Supabase Database Schema and Integration
-    - Design optimized database schema for MeSH terms with proper indexing
-    - Create tables for descriptors, concepts, and term relationships
-    - Implement vector embeddings for semantic search capabilities
-    - Set up full-text search configurations in Supabase
-    - Create batch import process for processed MeSH data
-    - Implement database migration strategy for future updates
-    - Add database-level validation constraints
-    - Create performance benchmarking suite
-
-5.3 - Term Expansion Algorithm Implementation
-    - Develop SPARQL-based query builder for MeSH term relationships
-    - Implement synonym expansion using concept relationships
-    - Create hierarchical expansion for broader/narrower terms
-    - Build relevance scoring system for suggested terms
-    - Implement context-aware filtering based on search domains
-    - Create caching mechanism for frequent term expansions
-    - Develop fallback strategies for non-MeSH terms
-    - Build comprehensive test suite for algorithm accuracy
-
-5.4 - Search Concept UI Components
-    - Design responsive UI for Population, Interest, Context inputs
-    - Implement typeahead search with MeSH term suggestions
-    - Create term selection/deselection interface with chips
-    - Build form validation with Zod schemas
-    - Implement custom term input with manual entry option
-    - Add visual indicators for term expansion suggestions
-    - Create accessibility-compliant UI components
-    - Implement keyboard navigation for term selection
-
-5.5 - Query Builder Interface
-    - Create modular query building components
-    - Implement search engine selection (PubMed, Google Scholar, etc.)
-    - Build file type filters with proper syntax for each engine
-    - Develop clinical guideline terms toggle with specialized vocabulary
-    - Create domain restriction components
-    - Implement real-time query string preview
-    - Add Boolean operator UI (AND, OR, NOT)
-    - Create query complexity indicator
-
-5.6 - Search Strategy Management
-    - Design data model for saved search strategies
-    - Implement persistence layer with Supabase
-    - Create search history tracking with timestamps
-    - Build UI for managing saved searches
-    - Implement export functionality (PDF, JSON)
-    - Add import capability for existing strategies
-    - Create sharing functionality with permissions
-    - Implement version tracking for strategy iterations
-
-5.7 - API Integration and Performance Optimization
-    - Create tRPC endpoints for MeSH term operations
-    - Implement rate limiting for external API calls
-    - Develop client-side caching for frequently used terms
-    - Create background indexing for improved search performance
-    - Add metrics collection for term usage patterns
-    - Implement progressive loading for large result sets
-    - Create API documentation with OpenAPI
-    - Build performance monitoring system
-
-5.8 - Testing and Documentation
-    - Create end-to-end test suite for search strategy builder
-    - Implement performance benchmarks for term lookup
-    - Generate technical documentation for the MeSH integration
-    - Create user documentation with examples
-    - Develop visual guides for effective term selection
-    - Build demonstration videos for onboarding
-    - Create troubleshooting guide for common issues
-    - Implement automated testing for critical paths
+- Implement user-defined keyword management
+- Create keyword organization by concept
+- Implement query validation
+- Build search preview functionality
+- Create search history tracking
 
 # Test Strategy:
-- Test MeSH term expansion accuracy with known term relationships
-- Verify query building logic with Jest unit tests
-- Test search strategy saving/loading with Supabase integration tests
-- Performance test term suggestions with large datasets
-- Validate generated queries against expected formats for each search engine
-- Test accessibility compliance with screen readers
-- Verify responsive design on various screen sizes
-- Test error handling and recovery scenarios
+- Verify keyword management functionality
+- Verify query building logic
+- Test search strategy saving/loading
+- Test concept organization
+- Validate generated queries
+
+# Subtasks:
+## 5.1. User Keyword Management [pending]
+### Dependencies: None
+### Description: Implement functionality for users to add, edit, and organize their own keywords for each concept (Population, Interest, Context)
+### Details:
+
+
+## 5.2. Search Concept UI Components [pending]
+### Dependencies: None
+### Description: Create UI components for concept input (Population, Interest, Context), implement form validation with Zod schemas, build term suggestion UI with selection/deselection, create custom term input functionality, and add responsive styling with Tailwind CSS
+### Details:
+
+
+## 5.3. Query Builder Interface [pending]
+### Dependencies: None
+### Description: Design and implement the query builder UI, create search engine selection components, build filetype filter options (PDF, DOC, DOCX), implement clinical guideline terms toggle, and add trusted domains filter input
+### Details:
+
+
+## 5.4. Search Preview and Validation [pending]
+### Dependencies: None
+### Description: Create real-time query preview component, implement query validation logic, build search string formatting, create testing framework for query generation, and add visual feedback for search validity
+### Details:
+
+
+## 5.5. Search Strategy Management [pending]
+### Dependencies: None
+### Description: Implement search strategy saving functionality, create search history tracking in Supabase, build UI for saved searches management, implement search loading and editing, and add export functionality for search strategies
+### Details:
+
+

@@ -1,0 +1,91 @@
+{
+  "meta": {
+    "generatedAt": "2025-04-08T23:44:21.372Z",
+    "tasksAnalyzed": 10,
+    "thresholdScore": 5,
+    "projectName": "Your Project Name",
+    "usedResearch": true
+  },
+  "complexityAnalysis": [
+    {
+      "taskId": 1,
+      "taskTitle": "Project Setup and Environment Configuration",
+      "complexityScore": 5,
+      "recommendedSubtasks": 4,
+      "expansionPrompt": "Break down into initializing repository, setting up development tools, creating folder structure, and configuring linting/formatting.",
+      "reasoning": "This task involves straightforward setup steps but requires attention to best practices and tool configurations, which may introduce moderate complexity."
+    },
+    {
+      "taskId": 2,
+      "taskTitle": "Design System and UI Component Library",
+      "complexityScore": 7,
+      "recommendedSubtasks": 5,
+      "expansionPrompt": "Split into design system specification, component implementation, responsiveness and accessibility setup, Storybook documentation, and testing.",
+      "reasoning": "The task is multifaceted, including both creative design work and technical implementation, requiring adherence to accessibility standards and comprehensive testing."
+    },
+    {
+      "taskId": 3,
+      "taskTitle": "Implement Authentication and User Management System",
+      "complexityScore": 8,
+      "recommendedSubtasks": 5,
+      "expansionPrompt": "Break into Supabase configuration, environment variable setup, auth helper creation, UI implementation, and route protection.",
+      "reasoning": "This task is complex due to integration challenges, session management, and the need for secure, robust implementation across multiple components."
+    },
+    {
+      "taskId": 4,
+      "taskTitle": "Database Schema and API Layer Implementation",
+      "complexityScore": 9,
+      "recommendedSubtasks": 5,
+      "expansionPrompt": "Divide into database schema creation, Prisma setup, API layer implementation, data model validation, and RLS configuration.",
+      "reasoning": "This task requires deep knowledge of database design, API creation, and security, making it highly complex and critical."
+    },
+    {
+      "taskId": 5,
+      "taskTitle": "Search Strategy Builder Implementation",
+      "complexityScore": 8,
+      "recommendedSubtasks": 5,
+      "expansionPrompt": "Split into structured input handling, MeSH integration, query builder creation, search engine selection, and saving strategies.",
+      "reasoning": "The task involves intricate UI and backend integration, requiring efficient handling of structured data and algorithmic logic."
+    },
+    {
+      "taskId": 6,
+      "taskTitle": "SERP Execution and Results Management",
+      "complexityScore": 9,
+      "recommendedSubtasks": 5,
+      "expansionPrompt": "Break into API integration, result parsing and normalization, deduplication, filtering and enrichment, and caching.",
+      "reasoning": "Highly complex due to external API integration, rate limiting, and the need for robust result handling and storage mechanisms."
+    },
+    {
+      "taskId": 7,
+      "taskTitle": "Review Interface Implementation",
+      "complexityScore": 6,
+      "recommendedSubtasks": 4,
+      "expansionPrompt": "Divide into result screening UI, tagging and filtering, progress tracking, and error handling.",
+      "reasoning": "Moderate complexity due to the need for real-time state updates and user-friendly interface design."
+    },
+    {
+      "taskId": 8,
+      "taskTitle": "Reporting and Export System",
+      "complexityScore": 7,
+      "recommendedSubtasks": 4,
+      "expansionPrompt": "Split into metric calculation, export formatters, error handling, and file storage.",
+      "reasoning": "This task is moderately complex, involving detailed metrics generation and multiple export formats."
+    },
+    {
+      "taskId": 9,
+      "taskTitle": "Email Notifications and Sharing",
+      "complexityScore": 6,
+      "recommendedSubtasks": 4,
+      "expansionPrompt": "Break into email service integration, template creation, preference management, and queue setup.",
+      "reasoning": "This task is moderately complex, requiring integration with a third-party service and robust email management."
+    },
+    {
+      "taskId": 10,
+      "taskTitle": "Final Testing and Deployment",
+      "complexityScore": 10,
+      "recommendedSubtasks": 5,
+      "expansionPrompt": "Divide into comprehensive testing, CI/CD pipeline setup, optimization, monitoring configuration, and rollback strategy.",
+      "reasoning": "This is the most complex task due to its broad scope, involving rigorous testing, optimization, and deployment readiness."
+    }
+  ]
+}

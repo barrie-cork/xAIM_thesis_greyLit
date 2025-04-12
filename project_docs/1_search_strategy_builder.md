@@ -5,7 +5,7 @@
 
 ## 🔹 Purpose
 
-The **Search Strategy Builder** helps researchers generate comprehensive, high-precision search queries by structuring concepts and keywords, enhancing them using controlled vocabularies (like MeSH), and preparing them for automated searching across trusted websites and SERP APIs.
+The **Search Strategy Builder** helps researchers generate comprehensive, high-precision search queries by structuring concepts and keywords, organizing them into logical groupings, and preparing them for automated searching across trusted websites and SERP APIs.
 
 ---
 
@@ -40,22 +40,24 @@ User sets how many results to retrieve (up to a max defined by each API):
 User can restrict results to:
 - **PDFs**: `filetype:pdf`
 - **Word documents**: `filetype:doc OR filetype:docx`
+- **Powerpoint**: `filetype:ppt OR filetype:pptx`
+- **HTML**: `filetype:html`
 - Combined using `OR` logic
 
 #### 📘 Clinical Guidelines (Optional)
-Users can toggle **“Include Clinical Guidelines”** to:
+Users can toggle **"Include Clinical Guidelines"** to:
 - Automatically add terms like:
-  - `guideline`, `recommendation*`, `consensus`, `guidance`
-- These are **pulled from a locally stored MeSH file**
+  - `guideline*`, `recommendation*`, `consensus`, `guidance`
+These will focus the search on guidelines only
 
 ---
 
-### Step 2: Keyword Expansion (via MeSH)
+### Step 2: Keyword Entry and Organization
 
-The app loads a local copy of the **MeSH (Medical Subject Headings)** dataset (JSON or RDF/XML), and:
-- Expands each concept with **preferred terms** and **entry terms** (synonyms)
+- Allow the user to add their own terms for each concept
+- Users can enter multiple keywords for each concept group
 - Example:
-  - `"Type 2 Diabetes"` → `"T2D"`, `"adult-onset diabetes"`
+  - `"Type 2 Diabetes"` → User adds: `"T2D"`, `"adult-onset diabetes"`
 
 🔎 Keywords are grouped by concept:
 ```json
@@ -68,59 +70,66 @@ The app loads a local copy of the **MeSH (Medical Subject Headings)** dataset (J
 ```
 
 The user can:
-- ✅ Select/deselect generated keywords
-- ➕ Add custom terms
+- ➕ Add custom terms to each concept
 - ❌ Remove any terms not relevant
+- 🔄 Reorganize terms between concepts if needed
 
 ---
 
 ### Step 3: Search String Generation
 
-Each concept group becomes an **AND-joined block**, and each website (if provided) adds a `site:` clause. Optionally, `filetype:` filters are appended.
+Each concept group becomes an **AND-joined block**, with terms within each concept joined by OR logic. Each trusted domain (if provided) gets its own search query with a `site:` clause. Optionally, `filetype:` filters are appended.
 
 #### 🧪 Example Search String
 
 ```text
-("adults" AND "middle-aged") AND
-("type 2 diabetes" AND "T2D") AND
-("primary care" AND "family medicine") AND
-("guideline" AND "recommendation*") site:www.nice.org.uk filetype:pdf OR filetype:docx
+(adults OR "middle-aged" OR "grown-ups") AND
+("type 2 diabetes" OR "T2D" OR "adult-onset diabetes") AND
+("primary care" OR "general practice") AND
+(guideline OR recommendation* OR consensus OR guidance) site:www.nice.org.uk filetype:pdf
 ```
 
-Multiple search strings are generated — one per website + filetype combination.
+Multiple search strings are generated — one per trusted domain, each with the specified filetype filters.
 
 ---
 
-### Step 4: Output for Review
+### Step 4: Search Strategy Preview & Execution
 
-The user reviews the final list of search strings:
-- ✅ Approves useful queries
-- ❌ Deletes irrelevant ones
-- ➕ Adds custom-written search strings if needed
+The user reviews the search strings in the Search Strategy Preview:
+- ✅ View all generated queries for each trusted domain
+- 🔍 See estimated result counts (when available)
+- 📋 Copy individual queries for external use
+- ▶️ Execute searches directly from the interface
 
-These are now ready to be passed to the **SERP Execution** module.
+The preview clearly organizes:
+- Concept groups with their keywords
+- File type selections
+- Trusted domains
+- Selected search engines with result limits
 
 ---
 
 ## 🔧 Architectural Considerations
 
-### 🧠 Use of MeSH (Local)
-- No external API dependency for synonyms
-- Stored in JSON format and indexed by term
-- Lookup via preferred term, entry terms, or tree numbers
-- Example source: [https://id.nlm.nih.gov/mesh/](https://id.nlm.nih.gov/mesh/)
+### 🧠 User-Defined Keywords
+- Simple keyword entry without external API dependency
+- Stored in state and persisted in JSON format
+- Grouped by concept for logical organization
 
 ### 🏷️ Concept Grouping
-Each concept is a **keyword group**, joined with `AND` logic. Within groups, keywords are joined using `OR` if needed (future enhancement).
+Each concept is a **keyword group**, joined with `AND` logic. Within groups, keywords are joined using `OR` logic.
 
 ### 📎 Filetype Filtering
 Implemented via search modifiers like:
 - `filetype:pdf`
-- `filetype:doc`
-- These can be appended to the end of each query string for compliant search APIs.
+- `filetype:doc OR filetype:docx`
+- `filetype:ppt OR filetype:pptx`
+- `filetype:html`
+- These are appended to the end of each query string for compliant search APIs.
 
-### 🌐 Website Filtering
-Using `site:domain` ensures search results are scoped to trusted sources.
+### 🌐 Trusted Domain Targeting
+- Using `site:domain` ensures search results are scoped to trusted sources
+- Each domain gets its own dedicated query for more targeted searching
 
 ---
 
@@ -130,18 +139,22 @@ Using `site:domain` ensures search results are scoped to trusted sources.
    - Population: `Adults`
    - Interest: `Type 2 Diabetes`
    - Context: `Primary Care`
-   - Selects: NICE and WHO websites
+   - Selects: NICE and WHO websites as trusted domains
    - Enables: Clinical Guidelines, Restrict to PDFs
    - Selects: Google via Serper, Bing via Serper
    - Max results: 50
 
 2. App:
-   - Expands each term using MeSH
-   - Adds `"guideline"` terms from MeSH
-   - Builds full search strings
-   - Applies `filetype:pdf` filters
+   - Organizes terms by concept
+   - Adds clinical guideline terms if enabled
+   - Builds full search strings for each trusted domain
+   - Applies filetype filters
+   - Displays search queries in preview panel
 
-3. User reviews generated queries and confirms
+3. User reviews generated queries and can:
+   - Execute searches directly
+   - Copy queries for external use
+   - Modify concept terms and see real-time updates
 
 ## **Output Format (to SERP Execution)**
 - Structured list of search queries
@@ -169,7 +182,7 @@ Using `site:domain` ensures search results are scoped to trusted sources.
   "search_title": "Diabetes in Adults (NICE)",
   "is_saved": true,
   "timestamp": "..."
-  
+  }
   ```
 
 ## 🔍 search_requests
@@ -192,7 +205,6 @@ is_saved	BOOLEAN	True if user saved this for reuse
 
 ---
 
----
 ## ASCII Flowchart for the Search Strategy Builder
 
 +-----------------------------------------------------+
@@ -206,8 +218,8 @@ is_saved	BOOLEAN	True if user saved this for reuse
          | - Population                |
          | - Interest                  |
          | - Context                   |
-         | - Websites (optional)       |
-         | - Filetype filter (PDF/DOC) |
+         | - Trusted Domains           |
+         | - Filetype filter           |
          | - Max results per API       |
          | - Clinical Guidelines? [Y/N]|
          | - Select SERP APIs          |
@@ -215,12 +227,11 @@ is_saved	BOOLEAN	True if user saved this for reuse
                         |
                         v
          +------------------------------+
-         | Step 2: Keyword Expansion    |
+         | Step 2: Keyword Organization |
          +------------------------------+
-         | Load local MeSH file         |
-         | -> Lookup terms & synonyms   |
-         | -> Add clinical terms (if Y) |
-         | User edits/approves keywords |
+         | - Add terms for each concept|
+         | - Group by concept          |
+         | - Remove irrelevant terms   |
          +------------------------------+
                         |
                         v
@@ -228,17 +239,19 @@ is_saved	BOOLEAN	True if user saved this for reuse
          | Step 3: Search String Build  |
          +------------------------------+
          | - Join concepts with AND     |
+         | - Join terms with OR         |
          | - Add site: filters          |
          | - Add filetype filters       |
-         | - Create 1 query per site    |
+         | - Create 1 query per domain  |
          +------------------------------+
                         |
                         v
          +------------------------------+
-         |  Step 4: User Review         |
+         |  Step 4: Preview & Execute   |
          +------------------------------+
-         | - Approve or edit strings    |
-         | - Add custom queries         |
+         | - View generated queries     |
+         | - Copy for external use      |
+         | - Execute searches directly  |
          +------------------------------+
                         |
                         v

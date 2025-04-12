@@ -42,7 +42,7 @@ The *Grey Literature Search App* enables researchers to systematically search, s
 ### 🔍 **Search Strategy Builder**
 
 - Define structured concepts (Population, Interest, Context)
-- Auto-generate synonyms from local MeSH data
+- Allow users to add multiple keywords for each concept
 - Select target websites and SERP APIs
 - Add filetype filters (PDF, DOCX)
 - Include "clinical guideline" terms toggle
@@ -79,7 +79,7 @@ The *Grey Literature Search App* enables researchers to systematically search, s
   - CSV (spreadsheet analysis)
 - Includes:
   - Search configs, filters, query history
-  - Total number of results returned, number of duplicates, number after duplicates removed, number of records retrienved (clicked), total number of records screened 
+  - Total number of results returned, number of duplicates, number after duplicates removed, number of records retrienved (clicked), total number of records screened
   - Included/excluded/maybe results
   - Clicked URLs, user notes, exclusion reasons
 
@@ -131,7 +131,6 @@ The *Grey Literature Search App* enables researchers to systematically search, s
 
 - ✅ Serper API (Google, Bing, DuckDuckGo)
 - ✅ SerpAPI (Google + other engines)
-- ✅ MeSH vocabulary (stored locally as JSON/RDF)
 - ✅ Optional: PDF/Word file detection via URL pattern or file header
 
 ---
