@@ -31,31 +31,31 @@ Technical Implementation:
 - Validate generated queries
 
 # Subtasks:
-## 5.1. User Keyword Management [pending]
+## 5.1. User Keyword Management [completed]
 ### Dependencies: None
 ### Description: Implement functionality for users to add, edit, and organize their own keywords for each concept (Population, Interest, Context)
 ### Details:
 
 
-## 5.2. Search Concept UI Components [pending]
+## 5.2. Search Concept UI Components [completed]
 ### Dependencies: None
 ### Description: Create UI components for concept input (Population, Interest, Context), implement form validation with Zod schemas, build term suggestion UI with selection/deselection, create custom term input functionality, and add responsive styling with Tailwind CSS
 ### Details:
 
 
-## 5.3. Query Builder Interface [pending]
+## 5.3. Query Builder Interface [completed]
 ### Dependencies: None
 ### Description: Design and implement the query builder UI, create search engine selection components, build filetype filter options (PDF, DOC, DOCX), implement clinical guideline terms toggle, and add trusted domains filter input
 ### Details:
 
 
-## 5.4. Search Preview and Validation [pending]
+## 5.4. Search Preview and Validation [completed]
 ### Dependencies: None
 ### Description: Create real-time query preview component, implement query validation logic, build search string formatting, create testing framework for query generation, and add visual feedback for search validity
 ### Details:
 
 
-## 5.5. Search Strategy Management [pending]
+## 5.5. Search Strategy Management [in-progress]
 ### Dependencies: None
 ### Description: Implement search strategy saving functionality, create search history tracking in Supabase, build UI for saved searches management, implement search loading and editing, and add export functionality for search strategies
 ### Details:

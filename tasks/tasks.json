@@ -123,35 +123,35 @@
         {
           "id": "5.1",
           "title": "User Keyword Management",
-          "status": "pending",
+          "status": "completed",
           "dependencies": [],
           "description": "Implement functionality for users to add, edit, and organize their own keywords for each concept (Population, Interest, Context)"
         },
         {
           "id": "5.2",
           "title": "Search Concept UI Components",
-          "status": "pending",
+          "status": "completed",
           "dependencies": [],
           "description": "Create UI components for concept input (Population, Interest, Context), implement form validation with Zod schemas, build term suggestion UI with selection/deselection, create custom term input functionality, and add responsive styling with Tailwind CSS"
         },
         {
           "id": "5.3",
           "title": "Query Builder Interface",
-          "status": "pending",
+          "status": "completed",
           "dependencies": [],
           "description": "Design and implement the query builder UI, create search engine selection components, build filetype filter options (PDF, DOC, DOCX), implement clinical guideline terms toggle, and add trusted domains filter input"
         },
         {
           "id": "5.4",
           "title": "Search Preview and Validation",
-          "status": "pending",
+          "status": "completed",
           "dependencies": [],
           "description": "Create real-time query preview component, implement query validation logic, build search string formatting, create testing framework for query generation, and add visual feedback for search validity"
         },
         {
           "id": "5.5",
           "title": "Search Strategy Management",
-          "status": "pending",
+          "status": "in-progress",
           "dependencies": [],
           "description": "Implement search strategy saving functionality, create search history tracking in Supabase, build UI for saved searches management, implement search loading and editing, and add export functionality for search strategies"
         }
