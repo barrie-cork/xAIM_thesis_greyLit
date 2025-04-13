@@ -1,0 +1,351 @@
+import { describe, expect, test, beforeEach, afterEach, vi } from 'vitest';
+import { appRouter } from '@/server/trpc/router';
+import { createInnerTRPCContext } from '@/server/trpc/context';
+import { inferProcedureInput } from '@trpc/server';
+import { type AppRouter } from '@/server/trpc/router';
+import { TRPCError } from '@trpc/server';
+
+// Mock Prisma client
+vi.mock('@/server/db/client', () => ({
+  prisma: {
+    searchRequest: {
+      create: vi.fn().mockResolvedValue({ queryId: 'mock-query-id' }),
+      findMany: vi.fn(),
+      findUnique: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
+    },
+    searchResult: {
+      create: vi.fn(),
+      createMany: vi.fn(),
+      findMany: vi.fn(),
+      findFirst: vi.fn(),
+      updateMany: vi.fn(),
+    },
+    rawSearchResult: {
+      create: vi.fn(),
+      createMany: vi.fn(),
+      findMany: vi.fn(),
+    },
+    duplicateRelationship: {
+      create: vi.fn(),
+      createMany: vi.fn(),
+      findMany: vi.fn(),
+    },
+  },
+}));
+
+// Mock Supabase client
+vi.mock('@/lib/supabase/server', () => ({
+  createServerClient: vi.fn(() => ({
+    auth: {
+      getUser: vi.fn(),
+      getSession: vi.fn(),
+    },
+  })),
+}));
+
+// Mock the search service
+vi.mock('@/lib/search', () => {
+  const originalModule = vi.requireActual('@/lib/search');
+  
+  return {
+    ...originalModule,
+    SearchService: vi.fn().mockImplementation(() => ({
+      search: vi.fn().mockResolvedValue([{
+        searchRequestId: 'mock-query-id',
+        provider: 'SERPER',
+        results: [
+          { title: 'Test Result 1', url: 'https://example.com/1' },
+          { title: 'Test Result 2', url: 'https://example.com/2' }
+        ],
+        metadata: {
+          rawResultsCount: 2
+        }
+      }]),
+      getAvailableProviders: vi.fn().mockReturnValue(['SERPER', 'SERPAPI'])
+    })),
+    StorageService: vi.fn().mockImplementation(() => ({
+      getSearchResults: vi.fn().mockResolvedValue([
+        { id: 'result1', title: 'Test Result 1', url: 'https://example.com/1' },
+        { id: 'result2', title: 'Test Result 2', url: 'https://example.com/2' }
+      ]),
+      getRawResults: vi.fn().mockResolvedValue([
+        { id: 'raw1', title: 'Raw Result 1', url: 'https://example.com/1' },
+        { id: 'raw2', title: 'Raw Result 2', url: 'https://example.com/2' }
+      ]),
+      getDuplicateRelationships: vi.fn().mockResolvedValue([
+        { 
+          id: 'rel1', 
+          originalResultId: 'result1', 
+          duplicateResultId: 'result3',
+          confidenceScore: 0.9,
+          originalResult: { id: 'result1', title: 'Original' },
+          duplicateResult: { id: 'result3', title: 'Duplicate' }
+        }
+      ])
+    })),
+    BackgroundProcessor: vi.fn().mockImplementation(() => ({
+      queueForProcessing: vi.fn().mockReturnValue(true),
+      processImmediately: vi.fn().mockResolvedValue({
+        totalProcessed: 2,
+        uniqueResults: 1,
+        duplicatesFound: 1,
+        processingTime: 100
+      }),
+      getStatus: vi.fn().mockReturnValue({
+        isProcessing: false,
+        queueLength: 0
+      })
+    }))
+  };
+});
+
+// Import the mocked modules
+import { prisma } from '@/server/db/client';
+import { createServerClient } from '@/lib/supabase/server';
+
+describe('Search API (Refactored)', () => {
+  const mockUserId = 'user123';
+  
+  // Mock authenticated user for all tests
+  beforeEach(() => {
+    vi.resetAllMocks();
+    
+    // Default setup for authenticated user
+    (createServerClient as vi.Mock).mockImplementation(() => ({
+      auth: {
+        getUser: vi.fn().mockResolvedValue({ 
+          data: { user: { id: mockUserId } } 
+        }),
+        getSession: vi.fn().mockResolvedValue({ 
+          data: { session: { user: { id: mockUserId } } } 
+        }),
+      },
+    }));
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  describe('executeV2', () => {
+    test('should execute a search and queue processing', async () => {
+      // Create caller
+      const ctx = createInnerTRPCContext({
+        headers: new Headers(),
+        cookies: {} as any,
+      });
+      
+      const caller = appRouter.createCaller(ctx);
+
+      // Input for the mutation
+      type Input = inferProcedureInput<AppRouter['search']['executeV2']>;
+      const input: Input = {
+        query: 'test query',
+        maxResults: 10,
+        fileTypes: ['PDF'],
+        domain: 'example.com'
+      };
+
+      // Execute the mutation
+      const result = await caller.search.executeV2(input);
+
+      // Verify the result
+      expect(result).toEqual({
+        searchRequestId: 'mock-query-id',
+        processingQueued: true,
+        searchResponses: [{
+          searchRequestId: 'mock-query-id',
+          provider: 'SERPER',
+          results: [
+            { title: 'Test Result 1', url: 'https://example.com/1' },
+            { title: 'Test Result 2', url: 'https://example.com/2' }
+          ],
+          metadata: {
+            rawResultsCount: 2
+          }
+        }]
+      });
+    });
+
+    test('should throw error when not authenticated', async () => {
+      // Override the default auth mock to simulate unauthenticated user
+      (createServerClient as vi.Mock).mockImplementation(() => ({
+        auth: {
+          getUser: vi.fn().mockResolvedValue({ data: { user: null } }),
+          getSession: vi.fn().mockResolvedValue({ data: { session: null } }),
+        },
+      }));
+
+      // Create caller
+      const ctx = createInnerTRPCContext({
+        headers: new Headers(),
+        cookies: {} as any,
+      });
+      
+      const caller = appRouter.createCaller(ctx);
+
+      // Input for the mutation
+      type Input = inferProcedureInput<AppRouter['search']['executeV2']>;
+      const input: Input = {
+        query: 'test query'
+      };
+
+      // Execute the mutation and expect error
+      await expect(caller.search.executeV2(input)).rejects.toThrow(TRPCError);
+    });
+  });
+
+  describe('getProcessedResults', () => {
+    test('should return processed search results', async () => {
+      // Create caller
+      const ctx = createInnerTRPCContext({
+        headers: new Headers(),
+        cookies: {} as any,
+      });
+      
+      const caller = appRouter.createCaller(ctx);
+
+      // Input for the query
+      type Input = inferProcedureInput<AppRouter['search']['getProcessedResults']>;
+      const input: Input = {
+        searchRequestId: 'mock-query-id',
+        includeDuplicates: false
+      };
+
+      // Execute the query
+      const result = await caller.search.getProcessedResults(input);
+
+      // Verify the result
+      expect(result).toEqual({
+        results: [
+          { id: 'result1', title: 'Test Result 1', url: 'https://example.com/1' },
+          { id: 'result2', title: 'Test Result 2', url: 'https://example.com/2' }
+        ],
+        totalResults: 2,
+        includingDuplicates: false
+      });
+    });
+  });
+
+  describe('getRawResults', () => {
+    test('should return raw search results', async () => {
+      // Create caller
+      const ctx = createInnerTRPCContext({
+        headers: new Headers(),
+        cookies: {} as any,
+      });
+      
+      const caller = appRouter.createCaller(ctx);
+
+      // Input for the query
+      type Input = inferProcedureInput<AppRouter['search']['getRawResults']>;
+      const input: Input = {
+        searchRequestId: 'mock-query-id'
+      };
+
+      // Execute the query
+      const result = await caller.search.getRawResults(input);
+
+      // Verify the result
+      expect(result).toEqual({
+        results: [
+          { id: 'raw1', title: 'Raw Result 1', url: 'https://example.com/1' },
+          { id: 'raw2', title: 'Raw Result 2', url: 'https://example.com/2' }
+        ],
+        totalResults: 2
+      });
+    });
+  });
+
+  describe('processResults', () => {
+    test('should process search results immediately', async () => {
+      // Create caller
+      const ctx = createInnerTRPCContext({
+        headers: new Headers(),
+        cookies: {} as any,
+      });
+      
+      const caller = appRouter.createCaller(ctx);
+
+      // Input for the mutation
+      type Input = inferProcedureInput<AppRouter['search']['processResults']>;
+      const input: Input = {
+        searchRequestId: 'mock-query-id',
+        deduplicationOptions: {
+          titleSimilarityThreshold: 0.8,
+          strictUrlMatching: false
+        }
+      };
+
+      // Execute the mutation
+      const result = await caller.search.processResults(input);
+
+      // Verify the result
+      expect(result).toEqual({
+        totalProcessed: 2,
+        uniqueResults: 1,
+        duplicatesFound: 1,
+        processingTime: 100
+      });
+    });
+  });
+
+  describe('getProcessingStatus', () => {
+    test('should return the current processing status', async () => {
+      // Create caller
+      const ctx = createInnerTRPCContext({
+        headers: new Headers(),
+        cookies: {} as any,
+      });
+      
+      const caller = appRouter.createCaller(ctx);
+
+      // Execute the query
+      const result = await caller.search.getProcessingStatus();
+
+      // Verify the result
+      expect(result).toEqual({
+        isProcessing: false,
+        queueLength: 0
+      });
+    });
+  });
+
+  describe('getDuplicateRelationships', () => {
+    test('should return duplicate relationships for a result', async () => {
+      // Create caller
+      const ctx = createInnerTRPCContext({
+        headers: new Headers(),
+        cookies: {} as any,
+      });
+      
+      const caller = appRouter.createCaller(ctx);
+
+      // Input for the query
+      type Input = inferProcedureInput<AppRouter['results']['getDuplicateRelationships']>;
+      const input: Input = {
+        resultId: 'result1'
+      };
+
+      // Execute the query
+      const result = await caller.results.getDuplicateRelationships(input);
+
+      // Verify the result
+      expect(result).toEqual({
+        relationships: [
+          { 
+            id: 'rel1', 
+            originalResultId: 'result1', 
+            duplicateResultId: 'result3',
+            confidenceScore: 0.9,
+            originalResult: { id: 'result1', title: 'Original' },
+            duplicateResult: { id: 'result3', title: 'Duplicate' }
+          }
+        ],
+        totalRelationships: 1
+      });
+    });
+  });
+});

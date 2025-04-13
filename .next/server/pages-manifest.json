@@ -4,6 +4,6 @@
   "/_document": "pages/_document.js",
   "/": "pages/index.js",
   "/search-builder": "pages/search-builder.js",
-  "/search-results": "pages/search-results.js",
-  "/api/search": "pages/api/search.js"
+  "/saved-searches": "pages/saved-searches.js",
+  "/search-results": "pages/search-results.js"
 }

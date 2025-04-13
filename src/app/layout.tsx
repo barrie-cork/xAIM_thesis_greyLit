@@ -1,4 +1,5 @@
 import { TRPCProvider } from '@/components/TRPCProvider';
+import '@/styles/globals.css';
 
 export const metadata = {
   title: 'Grey Literature Search',

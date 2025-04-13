@@ -22,6 +22,6 @@ export { Alert, AlertDescription, AlertTitle } from './alert';
 export { Chip } from './chip';
 
 // Dialogs and overlays
-export { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from './dialog';
+export { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from './dialog';
 export { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './select';
 export { Switch } from './switch';

@@ -1,0 +1,247 @@
+import { describe, expect, test, beforeEach, afterEach, vi } from 'vitest';
+import { 
+  migrateExistingResults,
+  isSearchRequestMigrated,
+  getSearchResultsWithCompatibility
+} from '../migration-helpers';
+import { StorageService } from '../../services/storage-service';
+import { BackgroundProcessor } from '../../services/background-processor';
+
+// Mock the StorageService
+vi.mock('../../services/storage-service', () => {
+  return {
+    StorageService: vi.fn().mockImplementation(() => ({
+      prisma: {
+        searchResult: {
+          findMany: vi.fn(),
+        },
+        rawSearchResult: {
+          findMany: vi.fn(),
+          create: vi.fn(),
+        },
+        $transaction: vi.fn((operations) => Promise.all(operations)),
+      },
+      getRawResults: vi.fn(),
+      getSearchResults: vi.fn(),
+    })),
+  };
+});
+
+// Mock the BackgroundProcessor
+vi.mock('../../services/background-processor', () => {
+  return {
+    BackgroundProcessor: vi.fn().mockImplementation(() => ({
+      queueForProcessing: vi.fn().mockReturnValue(true),
+    })),
+  };
+});
+
+describe('Migration Helpers', () => {
+  let storageService: StorageService;
+  let backgroundProcessor: BackgroundProcessor;
+
+  beforeEach(() => {
+    // Reset mocks
+    vi.resetAllMocks();
+    
+    // Create new instances for each test
+    storageService = new StorageService();
+    backgroundProcessor = new BackgroundProcessor(storageService);
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  test('migrateExistingResults should convert existing results to raw format', async () => {
+    // Mock existing search results
+    const queryId = 'test-query-id';
+    const existingResults = [
+      {
+        id: 'result1',
+        queryId,
+        title: 'Test Result 1',
+        url: 'https://example.com/1',
+        snippet: 'Test snippet 1',
+        rank: 1,
+        resultType: 'organic',
+        searchEngine: 'google',
+        device: 'desktop',
+        location: 'us',
+        language: 'en',
+        rawResponse: { key: 'value1' }
+      },
+      {
+        id: 'result2',
+        queryId,
+        title: 'Test Result 2',
+        url: 'https://example.com/2',
+        snippet: 'Test snippet 2',
+        rank: 2,
+        resultType: 'organic',
+        searchEngine: 'google',
+        device: 'desktop',
+        location: 'us',
+        language: 'en',
+        rawResponse: { key: 'value2' }
+      }
+    ];
+
+    // Mock the findMany method
+    storageService.prisma.searchResult.findMany.mockResolvedValue(existingResults);
+
+    // Migrate existing results
+    const result = await migrateExistingResults(queryId, storageService, backgroundProcessor);
+
+    // Verify results were retrieved
+    expect(storageService.prisma.searchResult.findMany).toHaveBeenCalledWith({
+      where: { queryId }
+    });
+
+    // Verify raw results were created
+    expect(storageService.prisma.rawSearchResult.create).toHaveBeenCalledTimes(2);
+    
+    // Verify the raw results contain the correct data
+    const createCalls = storageService.prisma.$transaction.mock.calls[0][0];
+    expect(createCalls).toHaveLength(2);
+    
+    // Check first raw result
+    expect(createCalls[0].data.title).toBe('Test Result 1');
+    expect(createCalls[0].data.url).toBe('https://example.com/1');
+    expect(createCalls[0].data.source).toBe('google');
+    expect(createCalls[0].data.metadata).toEqual({
+      snippet: 'Test snippet 1',
+      rank: 1,
+      resultType: 'organic',
+      searchEngine: 'google',
+      device: 'desktop',
+      location: 'us',
+      language: 'en',
+      rawResponse: { key: 'value1' }
+    });
+    
+    // Check second raw result
+    expect(createCalls[1].data.title).toBe('Test Result 2');
+    expect(createCalls[1].data.url).toBe('https://example.com/2');
+    
+    // Verify processing was queued
+    expect(backgroundProcessor.queueForProcessing).toHaveBeenCalledWith(queryId);
+    
+    // Verify return value
+    expect(result).toEqual({
+      rawResultsCreated: 2,
+      processingQueued: true
+    });
+  });
+
+  test('isSearchRequestMigrated should return true if raw results exist', async () => {
+    // Mock raw search results
+    const queryId = 'test-query-id';
+    const rawResults = [
+      {
+        id: 'raw1',
+        searchRequestId: queryId,
+        title: 'Raw Result 1',
+        url: 'https://example.com/1',
+        source: 'google',
+        metadata: {}
+      }
+    ];
+
+    // Mock the getRawResults method
+    storageService.getRawResults.mockResolvedValue(rawResults);
+
+    // Check if search request is migrated
+    const result = await isSearchRequestMigrated(queryId, storageService);
+
+    // Verify raw results were retrieved
+    expect(storageService.getRawResults).toHaveBeenCalledWith(queryId);
+
+    // Verify return value
+    expect(result).toBe(true);
+  });
+
+  test('isSearchRequestMigrated should return false if no raw results exist', async () => {
+    // Mock empty raw search results
+    const queryId = 'test-query-id';
+    
+    // Mock the getRawResults method
+    storageService.getRawResults.mockResolvedValue([]);
+
+    // Check if search request is migrated
+    const result = await isSearchRequestMigrated(queryId, storageService);
+
+    // Verify raw results were retrieved
+    expect(storageService.getRawResults).toHaveBeenCalledWith(queryId);
+
+    // Verify return value
+    expect(result).toBe(false);
+  });
+
+  test('getSearchResultsWithCompatibility should use new method for migrated requests', async () => {
+    // Mock raw search results (to indicate migration)
+    const queryId = 'test-query-id';
+    const rawResults = [{ id: 'raw1' }];
+    
+    // Mock processed results
+    const processedResults = [
+      { id: 'result1', title: 'Result 1' },
+      { id: 'result2', title: 'Result 2' }
+    ];
+
+    // Mock the methods
+    storageService.getRawResults.mockResolvedValue(rawResults);
+    storageService.getSearchResults.mockResolvedValue(processedResults);
+
+    // Get search results
+    const results = await getSearchResultsWithCompatibility(queryId, storageService);
+
+    // Verify raw results were checked
+    expect(storageService.getRawResults).toHaveBeenCalledWith(queryId);
+
+    // Verify new method was used
+    expect(storageService.getSearchResults).toHaveBeenCalledWith(
+      queryId,
+      false,
+      false
+    );
+
+    // Verify return value
+    expect(results).toEqual(processedResults);
+  });
+
+  test('getSearchResultsWithCompatibility should use old method for non-migrated requests', async () => {
+    // Mock empty raw search results (to indicate no migration)
+    const queryId = 'test-query-id';
+    
+    // Mock old-style results
+    const oldResults = [
+      { id: 'result1', title: 'Result 1', deduped: true },
+      { id: 'result2', title: 'Result 2', deduped: true }
+    ];
+
+    // Mock the methods
+    storageService.getRawResults.mockResolvedValue([]);
+    storageService.prisma.searchResult.findMany.mockResolvedValue(oldResults);
+
+    // Get search results
+    const results = await getSearchResultsWithCompatibility(queryId, storageService);
+
+    // Verify raw results were checked
+    expect(storageService.getRawResults).toHaveBeenCalledWith(queryId);
+
+    // Verify old method was used
+    expect(storageService.prisma.searchResult.findMany).toHaveBeenCalledWith({
+      where: {
+        queryId,
+        deduped: true
+      },
+      orderBy: {
+        rank: 'asc'
+      }
+    });
+
+    // Verify return value
+    expect(results).toEqual(oldResults);
+  });
+});

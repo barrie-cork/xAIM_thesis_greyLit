@@ -59,7 +59,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
           <label
             htmlFor={inputId}
             className={cn(
-              'label',
+              'block text-sm font-medium text-gray-700 mb-1',
               error && 'text-red-500',
               disabled && 'cursor-not-allowed opacity-50'
             )}
@@ -78,7 +78,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
             ref={ref}
             id={inputId}
             className={cn(
-              'input',
+              'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500',
               startIcon && 'pl-10',
               endIcon && 'pr-10',
               error && 'border-red-500 focus:border-red-500 focus:ring-red-500',
