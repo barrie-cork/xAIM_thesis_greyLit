@@ -1,0 +1,34 @@
+'use client';
+
+import { Button } from '@/components/ui';
+import { useEffect } from 'react';
+
+export default function RegisterError({
+  error,
+  reset,
+}: {
+  error: Error & { digest?: string };
+  reset: () => void;
+}) {
+  useEffect(() => {
+    // Log the error to an error reporting service
+    console.error('Register Error:', error);
+  }, [error]);
+
+  return (
+    <div className="flex flex-col items-center justify-center py-12">
+      <h2 className="text-2xl font-semibold mb-4 text-red-600">Something went wrong!</h2>
+      <p className="text-gray-600 mb-6 max-w-md text-center">
+        We encountered an error while loading the registration page. Please try again.
+      </p>
+      <div className="flex gap-4">
+        <Button onClick={reset} variant="default">
+          Try again
+        </Button>
+        <Button onClick={() => window.location.href = '/'} variant="outline">
+          Return to Home
+        </Button>
+      </div>
+    </div>
+  );
+}

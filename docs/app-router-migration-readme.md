@@ -8,13 +8,15 @@ This document tracks the progress of migrating the Grey Literature Search App fr
 |-----------|--------|-------|
 | Infrastructure | ✅ Complete | next.config.mjs, AuthContext, server-side auth utilities |
 | Home Page | ✅ Complete | Migrated to src/app/page.tsx |
-| Search Builder | ✅ Complete | Migrated to src/app/search-builder/page.tsx |
-| Search Results | ✅ Complete | Migrated to src/app/search-results/page.tsx |
-| Saved Searches | ✅ Complete | Migrated to src/app/saved-searches/page.tsx |
+| Search Builder | ✅ Complete | Migrated to src/app/(search)/search-builder/page.tsx |
+| Search Results | ✅ Complete | Migrated to src/app/(search)/search-results/page.tsx |
+| Saved Searches | ✅ Complete | Migrated to src/app/(search)/saved-searches/page.tsx |
+| Authentication | ✅ Complete | Migrated to src/app/(auth)/login/page.tsx and src/app/(auth)/register/page.tsx |
 | API Routes | ✅ Complete | Created route handlers for search API |
 | Testing | ✅ Complete | Created comprehensive tests for all migrated components |
 | Cleanup | ✅ Complete | Removed Pages Router files |
 | Performance | ✅ Complete | Added loading states and error boundaries for all pages |
+| Route Groups | ✅ Complete | Implemented route groups for better code organization |
 
 ## Completed Work
 
@@ -64,6 +66,22 @@ This document tracks the progress of migrating the Grey Literature Search App fr
 - Added loading states for all pages (src/app/search-builder/loading.tsx, src/app/search-results/loading.tsx, src/app/saved-searches/loading.tsx)
 - Added error boundaries for all pages (src/app/search-builder/error.tsx, src/app/search-results/error.tsx, src/app/saved-searches/error.tsx)
 - Added global error boundary (src/app/global-error.tsx)
+
+### Route Groups Implementation
+- Created authentication route group (src/app/(auth))
+  - Migrated login page to src/app/(auth)/login/page.tsx
+  - Migrated register page to src/app/(auth)/register/page.tsx
+  - Added layout with authentication check (src/app/(auth)/layout.tsx)
+  - Added loading and error states for auth pages
+- Created dashboard route group (src/app/(dashboard))
+  - Migrated dashboard page to src/app/(dashboard)/page.tsx
+  - Added layout with authentication requirement (src/app/(dashboard)/layout.tsx)
+- Created search route group (src/app/(search))
+  - Migrated search-builder page to src/app/(search)/search-builder/page.tsx
+  - Migrated search-results page to src/app/(search)/search-results/page.tsx
+  - Migrated saved-searches page to src/app/(search)/saved-searches/page.tsx
+  - Added layout with authentication requirement (src/app/(search)/layout.tsx)
+  - Added loading and error states for search pages
 
 ## Next Steps
 
