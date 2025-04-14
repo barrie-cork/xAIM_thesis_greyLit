@@ -48,8 +48,6 @@
       ],
       "priority": "high",
       "description": "Set up database schema, Prisma ORM, and tRPC API layer",
-      "completionDate": "2025-04-14",
-      "notes": "Fixed tRPC API usage issues by implementing proper hooks-based approach. Created comprehensive documentation and utility components for standardized tRPC usage. Added ESLint rule to prevent direct usage of trpcClient in React components.",
       "details": "Database Setup:\n- Configure PostgreSQL in Supabase\n- Create Prisma schema for all tables\n- Set up database migrations\n- Configure indexes for performance\n- Implement Row Level Security (RLS)\n\nAPI Layer:\n- Set up tRPC server and router with auth context\n- Create type-safe procedures for user management\n- Implement search strategy and saved searches\n- Implement results storage and deduplication\n- Implement review tagging and collaboration\n- Set up error handling and logging\n- Create API documentation and testing\n\nData Models:\n- Implement all data models as specified in database_architecture.md\n- Set up proper relationships and foreign keys\n- Configure JSONB fields for flexible metadata\n- Implement data validation using Zod",
       "testStrategy": "- Unit test all tRPC procedures\n- Test database operations and relationships\n- Verify type safety across the stack\n- Performance testing for complex queries\n- Test data validation and error handling",
       "subtasks": [
@@ -469,6 +467,59 @@
     "projectName": "Grey Literature Search App",
     "totalTasks": 10,
     "sourceFile": "project_docs/PRD.md",
-    "generatedAt": "2024-04-06"
-  }
+    "generatedAt": "2024-04-06",
+    "lastUpdated": "2025-04-15"
+  },
+  "knownIssues": [
+    {
+      "id": 5,
+      "title": "Authentication Routes Conflict",
+      "description": "The authentication routes are not being found at /auth/login and /auth/register.",
+      "status": "completed",
+      "completionDate": "2025-04-15",
+      "priority": "high",
+      "details": "There was a conflict between the route group (auth) and the regular route auth. The middleware was redirecting to /login and /register, but the actual routes are at /auth/login and /auth/register.\n\nImplemented solution: Updated the middleware to redirect to /auth/login and /auth/register. Created the login and register pages in the auth directory. Added a layout for the auth pages.",
+      "affectedComponents": ["Authentication", "Middleware", "Routing"]
+    },
+    {
+      "id": 1,
+      "title": "Next.js 15 Asynchronous API Changes",
+      "description": "Next.js 15.2.4 has made several previously synchronous APIs asynchronous, causing errors in our application.",
+      "status": "completed",
+      "completionDate": "2025-04-15",
+      "priority": "high",
+      "details": "The cookies() API is now asynchronous, but our code is still using it synchronously. This affects authentication and session management throughout the application. See docs/next-15-migration-issues.md for details.\n\nImplemented solution: Updated the Supabase server utility to handle async cookie operations. Made all functions that use cookies async functions.",
+      "affectedComponents": ["Authentication", "Middleware", "Supabase Integration", "Cookie Handling"]
+    },
+    {
+      "id": 2,
+      "title": "Supabase Authentication Security Warnings",
+      "description": "Supabase authentication is showing warnings about using potentially insecure user objects.",
+      "status": "completed",
+      "completionDate": "2025-04-15",
+      "priority": "medium",
+      "details": "We're using getSession() instead of getUser() in some places, which Supabase warns may be insecure. We need to update our authentication code to use getUser() where appropriate.\n\nImplemented solution: Updated the middleware and tRPC context to use getUser() instead of relying solely on getSession(). This provides more secure authentication by validating the user with the Supabase Auth server.",
+      "affectedComponents": ["Authentication", "User Management"]
+    },
+    {
+      "id": 3,
+      "title": "Batch Search Serialization Errors",
+      "description": "The batch search functionality is failing with serialization errors when using tRPC.",
+      "status": "completed",
+      "completionDate": "2025-04-15",
+      "priority": "high",
+      "details": "Complex nested objects in search results are causing serialization errors. Additionally, there are import conflicts between different search service implementations.\n\nImplemented solution: Created a REST API endpoint for batch searches to avoid tRPC serialization issues. Updated the SearchBuilder component to use the REST API directly. Fixed search service import conflicts. Added proper validation for search providers in the batch search API. Created a debug-logger utility to help identify serialization issues.",
+      "affectedComponents": ["Search Builder", "tRPC API", "Search Service"]
+    },
+    {
+      "id": 4,
+      "title": "User Data Synchronization",
+      "description": "The authentication table has two users but the user database is empty.",
+      "status": "completed",
+      "completionDate": "2025-04-15",
+      "priority": "high",
+      "details": "Users are being authenticated through Supabase Auth, but their data is not being synchronized with the application's user database table. This causes issues with Row Level Security (RLS) policies that rely on the user table.\n\nImplemented solution: Created a user synchronization function to ensure user data is properly stored in both Supabase Auth and the user database table. Added an admin page to trigger the user synchronization process.",
+      "affectedComponents": ["Authentication", "User Management", "Database"]
+    }
+  ]
 }

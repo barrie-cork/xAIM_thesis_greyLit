@@ -105,6 +105,8 @@ export const config = {
     '/saved-searches',
     '/search-results',
     '/review/:path*',
+    '/login',
+    '/register',
     '/auth/:path*',
   ],
 }

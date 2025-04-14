@@ -2,7 +2,7 @@
 
 import React from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
+import { createClient } from '@/utils/supabase/client'
 import { Button } from '../ui'
 import { Input } from '../Input/Input'
 import { Label } from '../Label/Label'
