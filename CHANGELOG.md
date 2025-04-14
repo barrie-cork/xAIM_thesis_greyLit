@@ -1,6 +1,63 @@
 # Changelog
 
-## Version 0.1.6 (Current)
+## Version 0.1.8 (Current)
+
+### App Router Migration Implementation
+
+- **Complete Migration Implementation**
+  - Created next.config.mjs with App Router configuration
+  - Set up AuthContext for client-side auth state management
+  - Created server-side auth utilities
+  - Updated the root layout to use the new Providers component
+  - Migrated the home page to App Router (src/app/page.tsx)
+  - Created Dashboard component for authenticated users
+  - Migrated the search-builder page to App Router (src/app/search-builder/page.tsx)
+  - Created SearchBuilderClient component
+  - Migrated the search-results page to App Router (src/app/search-results/page.tsx)
+  - Created SearchResultsClient component
+  - Migrated the saved-searches page to App Router (src/app/saved-searches/page.tsx)
+  - Created SavedSearchesClient component
+  - Created API route handlers for search functionality
+  - Created App Router migration progress tracking document
+  - Updated TASKS_STATUS.md with migration progress
+
+- **Testing and Validation**
+  - Created comprehensive test suite for App Router components
+  - Implemented tests for authentication flow
+  - Implemented tests for protected routes
+  - Implemented tests for client components
+  - Implemented tests for API routes
+  - Implemented tests for middleware
+  - Ran tests and verified that all components are working correctly
+  - Fixed issues with middleware and client component tests
+  - Simplified complex tests to improve reliability
+  - Updated documentation with testing progress
+
+- **Cleanup**
+  - Removed Pages Router files (src/pages/_app.tsx, src/pages/index.tsx, etc.)
+  - Removed Pages Router API routes (src/pages/api/search.ts, src/pages/api/trpc/[trpc].ts)
+  - Removed empty directories (src/pages/api/trpc, src/pages/api, src/pages)
+  - Updated documentation with cleanup progress
+
+- **Performance Optimization**
+  - Added loading states for all pages
+  - Added error boundaries for all pages
+  - Added global error boundary
+  - Updated documentation with performance optimization progress
+
+## Version 0.1.7
+
+### App Router Migration Strategy
+
+- **Migration Planning and Documentation**
+  - Created comprehensive App Router migration strategy document
+  - Broke down migration into six manageable phases with detailed steps
+  - Provided code examples for key migration components
+  - Documented common challenges and solutions
+  - Included testing checklist and rollback plan
+  - Updated documentation index with migration strategy reference
+
+## Version 0.1.6
 
 ### Developer Handover Documentation
 

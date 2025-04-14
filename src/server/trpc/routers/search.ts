@@ -80,7 +80,7 @@ export const searchRouter = router({
 
     try {
       const savedSearches = await ctx.prisma.searchRequest.findMany({
-        where: { 
+        where: {
           user_id: userId,
           is_saved: true,
         },
@@ -105,7 +105,7 @@ export const searchRouter = router({
 
       try {
         const searchRequest = await ctx.prisma.searchRequest.findUnique({
-          where: { 
+          where: {
             query_id: input.query_id,
           },
         });
@@ -128,7 +128,7 @@ export const searchRouter = router({
         return searchRequest;
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        
+
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',
           message: 'Failed to get search request',
@@ -175,7 +175,7 @@ export const searchRouter = router({
         return updatedSearch;
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        
+
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',
           message: 'Failed to update search request',
@@ -218,7 +218,7 @@ export const searchRouter = router({
         return { success: true, message: 'Search request deleted successfully' };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        
+
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',
           message: 'Failed to delete search request',
@@ -226,4 +226,4 @@ export const searchRouter = router({
         });
       }
     }),
-}); 
+});

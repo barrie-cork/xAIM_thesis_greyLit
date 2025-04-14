@@ -38,324 +38,63 @@ Technical Requirements:
 - Validate error handling
 
 # Subtasks:
-## 1. Implement Third-Party SERP API Integration with Rate Limiting [done]
+## 1. SERP API Integration and Query Execution [pending]
 ### Dependencies: None
-### Description: Set up integration with search engine API providers (Serper, SerpAPI) including authentication, request formatting, and rate limiting mechanisms
+### Description: Implement the core integration with search APIs and create the query execution system
 ### Details:
-Implementation steps:
-1. Create a `SearchProvider` interface defining standard methods for search execution
-2. Implement provider-specific classes for Serper and SerpAPI that implement this interface
-3. Set up API authentication and configuration management
-4. Implement a rate limiting mechanism using token bucket algorithm
-5. Add error handling for API failures (retry logic, fallback providers)
-6. Implement proper logging for all API interactions
-7. Create unit tests with mocked API responses
-8. Test with real API credentials in staging environment
+1. Set up API clients for Serper and SerpAPI with appropriate authentication
+2. Create a unified interface for query execution that abstracts the specific API used
+3. Implement pagination support for search results with proper cursor handling
+4. Add configurable parameters for search types (web, news, images) and result count
+5. Implement basic error handling for API failures and timeouts
+6. Set up detailed logging for all API requests and responses
 
-Testing approach:
-- Unit tests with mocked responses for each provider
-- Integration tests verifying rate limiting behavior
-- Error case simulations to verify proper handling
-
-## 2. Build Result Parsing and Normalization System [done]
+## 2. Rate Limiting and Error Handling System [pending]
 ### Dependencies: 6.1
-### Description: Create a system to parse and normalize search results from different providers into a standardized format with pagination support
+### Description: Create robust rate limiting and comprehensive error handling for search APIs
 ### Details:
-Implementation steps:
-1. Define a standardized `SearchResult` data structure
-2. Implement provider-specific result parsers that convert raw API responses to the standard format
-3. Create a normalization pipeline to standardize fields (titles, URLs, snippets)
-4. Implement URL normalization (handle tracking parameters, protocol differences)
-5. Add support for pagination and result merging
-6. Create a query execution system that handles pagination across multiple requests
-7. Implement error handling for malformed results
+1. Implement token bucket algorithm for rate limiting API requests
+2. Create retry mechanism with exponential backoff for failed requests
+3. Add circuit breaker pattern to prevent cascading failures
+4. Implement fallback mechanisms to switch between API providers if one fails
+5. Create detailed error classification system (network errors, API errors, quota errors)
+6. Set up monitoring and alerting for API health and quota usage
+7. Implement request queuing for handling traffic spikes
 
-Testing approach:
-- Unit tests with sample responses from each provider
-- Tests for URL normalization with various edge cases
-- Pagination tests with simulated multi-page results
-- Test with actual search queries to verify real-world behavior
-
-## 3. Develop Result Deduplication System with Fuzzy Matching [done]
-### Dependencies: 6.2
-### Description: Create a deduplication system that identifies and handles duplicate search results using URL normalization and fuzzy title matching
+## 3. Result Parsing, Normalization and Storage [pending]
+### Dependencies: 6.1, 6.2
+### Description: Build the system to parse, normalize and store search results
 ### Details:
-Implementation steps:
-1. Integrate the string-similarity library for fuzzy matching
-2. Implement advanced URL normalization (canonical form, parameter removal)
-3. Create a fuzzy title matching algorithm with configurable threshold
-4. Develop a deduplication pipeline that processes search results
-5. Add a duplicate logging system to track identified duplicates
-6. Implement performance optimizations for large result sets
-7. Create configuration options for deduplication strictness
+1. Create parsers for different API response formats (Serper, SerpAPI)
+2. Implement a unified result schema to normalize data from different providers
+3. Build URL normalization system (handle protocols, query parameters, trailing slashes)
+4. Set up a database schema for storing search results
+5. Implement efficient batch storage operations
+6. Create TTL-based caching system for search results
+7. Add metadata enrichment for basic result information (timestamp, source API, query context)
 
-Testing approach:
-- Unit tests with known duplicate sets
-- Performance tests with large result sets
-- Threshold testing to find optimal fuzzy matching settings
-- Test with real search results to verify accuracy
-- Edge case testing (very similar but different results)
-
-## 4. Implement Result Storage and Caching System [pending]
-### Dependencies: 6.2
-### Description: Create a storage and caching system for search results to improve performance and reduce API calls
-### Details:
-Implementation steps:
-1. Design a database schema for storing search results
-2. Implement a caching layer with configurable TTL (time-to-live)
-3. Create cache invalidation mechanisms
-4. Develop a query fingerprinting system to identify identical searches
-5. Implement incremental result storage (append new results to existing ones)
-6. Add metrics collection for cache hit/miss rates
-7. Create a cache warming strategy for common queries
-8. Implement storage cleanup for outdated results
-
-Testing approach:
-- Unit tests for cache operations
-- Performance tests for read/write operations
-- Concurrency tests for simultaneous cache access
-- Integration tests with the search execution system
-- Verify cache invalidation works correctly
-
-## 5. Build Result Filtering and Enrichment Pipeline [pending]
-### Dependencies: 6.3, 6.4
-### Description: Create a pipeline for filtering and enriching search results with additional data and relevance scoring
-### Details:
-Implementation steps:
-1. Implement configurable filtering rules (domain blocking, keyword filtering)
-2. Create a result enrichment pipeline architecture
-3. Develop metadata enrichment modules (readability scores, content type detection)
-4. Implement relevance scoring algorithms
-5. Create a plugin system for custom enrichment modules
-6. Add result ranking and sorting capabilities
-7. Implement performance monitoring for enrichment operations
-8. Create an API for accessing filtered and enriched results
-
-Testing approach:
-- Unit tests for individual filters and enrichment modules
-- Integration tests for the complete pipeline
-- Performance testing with large result sets
-- A/B testing different enrichment strategies
-- Verify enriched data accuracy with known test cases
-
-## 6. Implement Search API Integration [pending]
-### Dependencies: None
-### Description: Set up API clients for Serper and SerpAPI with proper authentication, request formatting, and error handling
-### Details:
-Implementation details:
-1. Create API client classes for Serper and SerpAPI with configuration options
-2. Implement authentication methods for each service
-3. Build request formatters to convert search parameters to API-specific formats
-4. Create response handlers to extract raw results
-5. Implement rate limiting with configurable thresholds
-6. Set up comprehensive error handling with appropriate retry logic
-7. Add detailed logging for API interactions
-8. Create unit tests with mock responses for each API
-9. Document API client usage with examples
-
-Testing approach:
-- Unit test each API client with mocked responses
-- Create integration tests with API keys for dev environment
-- Test rate limiting by simulating rapid requests
-- Verify error handling with intentionally malformed requests
-
-## 7. Build Result Parsing and Normalization System [pending]
-### Dependencies: 6.1
-### Description: Create a system to parse, normalize and structure search results from different API sources into a unified format
-### Details:
-Implementation details:
-1. Define a standardized result schema that accommodates all possible fields
-2. Create parser classes for each API response format
-3. Implement field mapping from API-specific formats to the standard schema
-4. Build normalization functions for URLs, titles, snippets, and dates
-5. Handle special result types (featured snippets, knowledge panels, etc.)
-6. Implement pagination tracking and next page token management
-7. Add validation to ensure all normalized results conform to the schema
-8. Create utility functions for result transformation
-
-Testing approach:
-- Unit test parsers with sample API responses
-- Test normalization with edge cases (malformed URLs, missing fields)
-- Verify schema validation catches malformed results
-- Test with real API responses to ensure complete coverage
-
-## 8. Implement Result Deduplication System [pending]
-### Dependencies: 6.2
-### Description: Create a deduplication system that identifies and removes duplicate search results based on URL normalization and fuzzy title matching
-### Details:
-Implementation details:
-1. Implement URL normalization functions (remove tracking parameters, standardize protocols, handle redirects)
-2. Integrate string-similarity library for fuzzy title matching
-3. Create configurable similarity thresholds for title matching
-4. Build a deduplication pipeline that processes normalized results
-5. Implement logging of identified duplicates with reasons
-6. Create metrics collection for deduplication rate monitoring
-7. Design efficient algorithms to minimize processing time for large result sets
-8. Add options to preserve certain duplicate types when needed
-
-Testing approach:
-- Unit test URL normalization with various URL formats
-- Test fuzzy matching with similar titles at different thresholds
-- Benchmark performance with large result sets
-- Verify edge cases like empty fields and special characters
-
-## 9. Create Result Filtering and Enrichment Pipeline [pending]
+## 4. Deduplication and Filtering System [pending]
 ### Dependencies: 6.3
-### Description: Build a system to filter results based on criteria and enrich them with additional metadata
+### Description: Implement advanced deduplication and filtering for search results
 ### Details:
-Implementation details:
-1. Implement configurable filtering rules (by domain, content type, date, etc.)
-2. Create a rule engine to apply filters to result sets
-3. Build content classification system to categorize results
-4. Implement metadata enrichment to add information like reading time, content type
-5. Create domain authority integration to score result quality
-6. Add sentiment analysis for result snippets
-7. Implement keyword highlighting in snippets
-8. Create a pipeline architecture to process results through multiple enrichment stages
-9. Add performance monitoring for each enrichment step
+1. Integrate string-similarity library for fuzzy title matching
+2. Implement URL normalization for exact URL matching
+3. Create configurable similarity thresholds for title-based deduplication
+4. Build logging system for duplicate detection with reasoning
+5. Implement content-based filtering rules (keyword blacklists, domain filtering)
+6. Create relevance scoring system to prioritize results
+7. Build configuration system for customizable filtering rules
 
-Testing approach:
-- Unit test individual filters with sample results
-- Test the rule engine with complex filter combinations
-- Verify enrichment accuracy with known content types
-- Measure performance impact of each enrichment step
-
-## 10. Implement Result Storage and Caching System [pending]
-### Dependencies: 6.4
-### Description: Build a system to store, cache, and retrieve search results efficiently
+## 5. Result Enrichment Pipeline [pending]
+### Dependencies: 6.3, 6.4
+### Description: Create the complete result enrichment pipeline for enhanced search results
 ### Details:
-Implementation details:
-1. Design a database schema for storing processed search results
-2. Implement a caching layer with configurable TTL (Time To Live)
-3. Create cache invalidation strategies based on query parameters
-4. Build query fingerprinting to identify identical searches
-5. Implement efficient pagination for cached results
-6. Create a storage service with CRUD operations for results
-7. Add compression for large result sets
-8. Implement background jobs for cache maintenance
-9. Create metrics for cache hit rates and storage usage
-10. Add export functionality for result sets
-
-Testing approach:
-- Unit test storage operations with mock data
-- Test cache performance with repeated queries
-- Verify cache invalidation works correctly
-- Benchmark storage and retrieval with large result sets
-- Test concurrent access patterns
-
-## 11. Implement Search API Integration and Query Execution [pending]
-### Dependencies: None
-### Description: Set up API clients for search providers (Serper, SerpAPI) and implement a query execution system with pagination support
-### Details:
-Implementation steps:
-1. Create API client classes for Serper and SerpAPI with configuration options
-2. Implement authentication and request handling for each provider
-3. Build a query execution system that supports:
-   - Basic search parameters (query, num_results, page)
-   - Pagination through search results
-   - Provider-specific parameter handling
-4. Implement rate limiting using a token bucket algorithm
-5. Create comprehensive error handling for API failures
-6. Set up logging for all API interactions
-
-Testing approach:
-- Unit tests for API client configuration
-- Mock API responses for testing error handling
-- Integration tests with sandbox/test API keys
-- Test rate limiting behavior
-
-## 12. Build Result Parsing and Normalization System [pending]
-### Dependencies: 6.11
-### Description: Create a system to parse and normalize search results from different providers into a standard format
-### Details:
-Implementation steps:
-1. Define a standardized result schema to represent search results
-2. Implement provider-specific parsers to convert raw API responses to the standard format
-3. Create normalization functions for common fields:
-   - Title normalization (trim, standardize capitalization)
-   - URL normalization (handle protocols, trailing slashes, query params)
-   - Description cleaning and formatting
-4. Add metadata enrichment (source provider, timestamp, query info)
-5. Implement validation to ensure all required fields are present
-
-Testing approach:
-- Unit tests for each parser with sample API responses
-- Test normalization with edge cases (malformed URLs, missing fields)
-- Integration tests combining query execution and parsing
-- Validation tests to ensure schema compliance
-
-## 13. Implement Result Deduplication System [pending]
-### Dependencies: 6.12
-### Description: Create a system to identify and handle duplicate search results using URL normalization and fuzzy title matching
-### Details:
-Implementation steps:
-1. Implement advanced URL normalization:
-   - Remove tracking parameters
-   - Handle URL variants (www vs non-www, http vs https)
-   - Canonical URL detection
-2. Integrate string-similarity library for fuzzy title matching:
-   - Configure similarity thresholds
-   - Implement efficient comparison algorithm
-3. Create a deduplication pipeline that:
-   - Identifies exact URL matches
-   - Finds similar titles when URLs differ
-   - Logs duplicate information
-4. Implement a merge strategy for combining information from duplicates
-5. Add configuration options for deduplication sensitivity
-
-Testing approach:
-- Unit tests for URL normalization with various URL formats
-- Test fuzzy matching with similar and dissimilar titles
-- Performance testing with large result sets
-- Integration tests with the full result processing pipeline
-
-## 14. Build Result Filtering and Enrichment Pipeline [pending]
-### Dependencies: 6.13
-### Description: Create a system to filter search results based on configurable criteria and enrich results with additional information
-### Details:
-Implementation steps:
-1. Implement configurable filtering system:
-   - Domain/source filtering (blocklist/allowlist)
-   - Content type filtering
-   - Date/freshness filtering
-   - Custom filter rule support
-2. Create result enrichment pipeline:
-   - Extract and normalize dates
-   - Detect content types
-   - Extract key entities or keywords
-   - Add relevance scoring
-3. Implement filter chain execution with logging
-4. Create extension points for custom enrichment plugins
-5. Add performance monitoring for filtering operations
-
-Testing approach:
-- Unit tests for each filter type
-- Test enrichment with various result types
-- Performance testing of the full pipeline
-- Integration tests with previous components
-
-## 15. Implement Result Storage and Caching System [pending]
-### Dependencies: 6.14
-### Description: Create a system to store processed search results and implement caching to improve performance and reduce API calls
-### Details:
-Implementation steps:
-1. Design and implement result storage schema:
-   - Support for full result objects
-   - Query metadata storage
-   - Timestamp and expiration handling
-2. Build a caching layer with:
-   - Time-based expiration
-   - Cache invalidation strategies
-   - Memory and persistent cache options
-3. Implement cache lookup before API calls
-4. Create a query fingerprinting system to identify similar queries
-5. Add cache statistics and monitoring
-6. Implement cache maintenance operations (cleanup, optimization)
-
-Testing approach:
-- Unit tests for storage operations
-- Cache hit/miss testing
-- Performance benchmarks
-- Integration tests with the full search execution pipeline
-- Test cache invalidation and expiration
+1. Implement content snippet extraction and cleaning
+2. Add domain reputation and authority scoring
+3. Create metadata enrichment (publish date extraction, author information)
+4. Build category and topic classification for results
+5. Implement sentiment analysis for result snippets
+6. Create system for attaching custom tags and annotations
+7. Build final result formatting with all enrichments for downstream consumption
+8. Implement comprehensive metrics collection for result quality
 

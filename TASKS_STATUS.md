@@ -73,6 +73,25 @@ The search builder now uses a simplified approach without MeSH term dependencies
 
 Each trusted domain now gets its own dedicated search query instead of being combined with OR logic, allowing for more targeted searches per domain. The preview section includes the ability to see all queries at once and execute them individually.
 
+### App Router Migration
+The application is being migrated from Next.js Pages Router to App Router architecture for improved performance and future-proofing. Progress includes:
+
+- ✅ Created next.config.mjs with App Router configuration
+- ✅ Set up AuthContext for client-side auth state management
+- ✅ Created server-side auth utilities
+- ✅ Updated the root layout to use the new Providers component
+- ✅ Migrated the home page to App Router
+- ✅ Migrated the search-builder page to App Router
+- ✅ Migrated the search-results page to App Router
+- ✅ Migrated the saved-searches page to App Router
+- ✅ Created API route handlers for search functionality
+- ✅ Created comprehensive tests for migrated components
+- ✅ Ran tests and verified that all components are working correctly
+- ✅ Removed Pages Router files
+- ✅ Fixed failing tests
+- ✅ Added loading states for all pages
+- ✅ Added error boundaries for all pages
+
 ## Completed Tasks
 - [x] Task 1: Project Setup and Environment Configuration
 - [x] Task 2: Design System and UI Component Library
@@ -82,3 +101,4 @@ Each trusted domain now gets its own dedicated search query instead of being com
 
 ## Tasks In Progress
 - [ ] Task 6: SERP Execution and Results Management
+- [ ] App Router Migration: Migrating from Pages Router to App Router

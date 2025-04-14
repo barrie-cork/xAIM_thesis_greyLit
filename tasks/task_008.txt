@@ -20,15 +20,41 @@ Features:
   - URLs and notes
 
 Technical Implementation:
-- Build metric calculation system with tRPC procedures
+- Build metric calculation system
 - Create export formatters
 - Implement proper error handling
-- Set up export file storage in Supabase Storage
+- Set up export file storage
 - Create export progress tracking
 
 # Test Strategy:
 - Verify metric calculations
 - Test all export formats
 - Validate large export handling
-- Test error scenarios with tRPC error handling
+- Test error scenarios
 - Verify export completeness
+
+# Subtasks:
+## 1. Implement PRISMA Metrics Calculation System [pending]
+### Dependencies: None
+### Description: Build the core system for calculating and tracking all PRISMA 2020 metrics based on the systematic review data
+### Details:
+Create a metrics service that calculates all required PRISMA 2020 metrics including: number of records identified through database searching, number of records after duplicates removed, number of full-text articles assessed for eligibility, number of studies included in review, etc. Implement methods to access search configurations, result statistics, screening decisions, and metadata like URLs and notes. Add proper error handling for missing or inconsistent data. The metrics calculation should be implemented as a separate service that can be called by the export formatters.
+
+## 2. Develop Export Progress Tracking and Storage System [pending]
+### Dependencies: 8.1
+### Description: Create the infrastructure for tracking export progress and storing exported files
+### Details:
+Implement a system to track the progress of export operations, including status updates (queued, in-progress, completed, failed). Create a file storage service to manage exported files with appropriate naming conventions and organization. Implement cleanup mechanisms for temporary files. Add error handling for storage issues. This system will serve as the foundation for the export formatters to use when generating files.
+
+## 3. Implement Markdown and HTML Export Formatters [pending]
+### Dependencies: 8.1, 8.2
+### Description: Create export formatters for Markdown and HTML formats with PRISMA-aligned reporting
+### Details:
+Build export formatters that convert the calculated PRISMA metrics into well-formatted Markdown and HTML outputs. For Markdown, create templates that follow PRISMA reporting guidelines with proper headings, lists, and tables. For HTML, develop templates with appropriate styling that match PRISMA report structures. Both formatters should include sections for search configurations, result statistics, screening decisions, and metadata. Implement proper error handling for formatting issues. The formatters should use the metrics calculation service and store outputs using the export storage system.
+
+## 4. Implement CSV Export and Complete Export System Integration [pending]
+### Dependencies: 8.1, 8.2, 8.3
+### Description: Create CSV export formatter and integrate all export components into a complete system
+### Details:
+Develop a CSV export formatter that organizes PRISMA metrics and review data into a tabular format. Design the CSV structure to properly represent hierarchical data like search configurations and screening decisions. Then integrate all export formatters (Markdown, HTML, CSV) into a unified export system with a common interface. Add a controller layer to handle export requests, coordinate with the progress tracking system, and deliver completed exports to users. Implement comprehensive error handling and user feedback mechanisms. Finally, test the complete export system with various data sets to ensure accuracy and performance.
+

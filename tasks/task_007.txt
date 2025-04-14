@@ -8,7 +8,7 @@
 Implement the review interface:
 
 Features:
-- Create result screening interface using React components
+- Create result screening interface
 - Implement tagging system (Include, Exclude, Maybe)
 - Add exclusion reason tracking
 - Create note-taking functionality
@@ -17,15 +17,41 @@ Features:
 - Create auto-save functionality
 
 Technical Implementation:
-- Build efficient result loading with tRPC queries
-- Implement real-time state updates with React hooks
-- Create progress persistence in Supabase
-- Set up proper error handling with tRPC
-- Implement keyboard shortcuts with React hotkeys
+- Build efficient result loading
+- Implement real-time state updates
+- Create progress persistence
+- Set up proper error handling
+- Implement keyboard shortcuts
 
 # Test Strategy:
 - Test tagging functionality
-- Verify auto-save reliability with Supabase
+- Verify auto-save reliability
 - Test filtering and sorting
 - Validate progress tracking
 - Test keyboard shortcuts
+
+# Subtasks:
+## 1. Implement Core Review Interface and Result Loading [pending]
+### Dependencies: None
+### Description: Create the foundation of the review interface with basic result screening capability and efficient data loading
+### Details:
+Create the main review interface component with efficient result loading and display. Implement the basic layout with result cards/rows showing essential information. Set up API connections to fetch results in batches with pagination. Include error handling for failed data loading with appropriate user feedback. This subtask establishes the foundation that all other review features will build upon.
+
+## 2. Implement Tagging System and Exclusion Tracking [pending]
+### Dependencies: 7.1
+### Description: Add the core tagging functionality (Include, Exclude, Maybe) with reason tracking for excluded items
+### Details:
+Build upon the core interface to implement the tagging system with three states: Include, Exclude, and Maybe. Create the UI components for tag selection (buttons, dropdown, etc.). Add a modal or inline form for capturing exclusion reasons when items are tagged as 'Exclude'. Implement state management for tracking the tagging status of each result. Set up real-time state updates to ensure tagging actions are immediately reflected in the UI. This functionality forms the primary interaction method for the review process.
+
+## 3. Add Note-Taking, Filtering and Sorting Capabilities [pending]
+### Dependencies: 7.1, 7.2
+### Description: Implement note-taking functionality and enhance the interface with filtering and sorting options
+### Details:
+Add note-taking functionality with a text area for each result that allows reviewers to add comments. Implement filtering options to view results by tag status (Include/Exclude/Maybe), by exclusion reason, or other relevant attributes. Create sorting functionality to order results by relevance, date, or other criteria. Ensure these features work efficiently without degrading performance, using optimized query parameters when fetching new data. This subtask enhances the usability of the review interface for managing large result sets.
+
+## 4. Implement Progress Tracking, Auto-Save and Keyboard Shortcuts [pending]
+### Dependencies: 7.1, 7.2, 7.3
+### Description: Add progress tracking, auto-save functionality, and keyboard shortcuts to improve efficiency
+### Details:
+Create a progress tracking component showing completion statistics (e.g., percentage of items reviewed). Implement auto-save functionality to persist review progress at regular intervals and when changes are made. Set up a local storage fallback in case of connection issues. Add keyboard shortcuts for common actions (e.g., tagging, navigation between results, submitting notes). Implement progress persistence by saving the current state to the backend. Include visual indicators for saved/unsaved changes and proper error handling for save failures. This subtask completes the review interface by adding productivity features and ensuring work is not lost.
+

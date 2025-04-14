@@ -1,4 +1,4 @@
-import { TRPCProvider } from '@/components/TRPCProvider';
+import { Providers } from '@/components/Providers';
 import '@/styles/globals.css';
 
 export const metadata = {
@@ -14,9 +14,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <TRPCProvider>
+        <Providers>
           {children}
-        </TRPCProvider>
+        </Providers>
       </body>
     </html>
   )

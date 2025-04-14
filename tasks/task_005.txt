@@ -3,7 +3,7 @@
 # Status: completed
 # Dependencies: 2, 4
 # Priority: high
-# Description:
+# Description: 
 # Details:
 Create the search strategy builder component:
 

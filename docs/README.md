@@ -7,6 +7,7 @@ This directory contains documentation for the Grey Literature Search App.
 - [Developer Handover](./developer-handover.md) - Comprehensive overview of the application architecture and workflows
 - [Technical Architecture](./technical-architecture.md) - Detailed technical architecture with diagrams
 - [Application Workflows](./application-workflows.md) - Step-by-step breakdown of key application workflows
+- [Task 005 - Search Strategy Builder](./developer-handover-task005.md) - Detailed guide for implementing the remaining Search Strategy Management features
 
 ## UI Documentation
 
@@ -18,6 +19,7 @@ This directory contains documentation for the Grey Literature Search App.
 
 - [Project Structure](../README.md) - Overview of the project structure
 - [UI Components](../src/components/ui/README.md) - Documentation for the UI component library
+- [App Router Migration Strategy](./app-router-migration-strategy.md) - Detailed strategy for migrating from Pages Router to App Router
 
 ## Changelog
 

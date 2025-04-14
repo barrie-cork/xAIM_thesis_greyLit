@@ -1,51 +1,42 @@
-"use client"
+'use client';
 
-import React, { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
-import { Button } from '../ui'
-import { LogOut, Loader2 } from 'lucide-react'
+import { Button } from '@/components/ui';
+import { useAuth } from '@/contexts/AuthContext';
+import { LogOut } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
-export const LogoutButton = () => {
-  const [isLoading, setIsLoading] = useState(false)
-  const router = useRouter()
-  const supabase = createClient()
+interface LogoutButtonProps {
+  variant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link';
+  size?: 'default' | 'sm' | 'lg';
+  className?: string;
+}
+
+export function LogoutButton({
+  variant = 'outline',
+  size = 'sm',
+  className,
+}: LogoutButtonProps) {
+  const { signOut } = useAuth();
+  const router = useRouter();
 
   const handleLogout = async () => {
-    setIsLoading(true)
-
     try {
-      await supabase.auth.signOut()
-
-      // Clear any local storage items related to the session
-      localStorage.removeItem('searchBuilderConcepts')
-      localStorage.removeItem('searchBuilderOptions')
-      localStorage.removeItem('editSearchData')
-
-      // Redirect to home page
-      router.push('/')
-      router.refresh()
+      await signOut();
+      router.push('/auth/login');
     } catch (error) {
-      console.error('Logout error:', error)
-    } finally {
-      setIsLoading(false)
+      console.error('Error signing out:', error);
     }
-  }
+  };
 
   return (
     <Button
+      variant={variant}
+      size={size}
       onClick={handleLogout}
-      variant="outline"
-      size="default"
-      className="flex items-center gap-2"
-      disabled={isLoading}
+      className={className}
     >
-      {isLoading ? (
-        <Loader2 className="h-4 w-4 animate-spin" />
-      ) : (
-        <LogOut className="h-4 w-4" />
-      )}
-      Sign Out
+      <LogOut className="h-4 w-4 mr-2" />
+      Logout
     </Button>
-  )
+  );
 }

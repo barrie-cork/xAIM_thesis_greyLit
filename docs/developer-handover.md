@@ -13,7 +13,8 @@
 9. [API Integration](#api-integration)
 10. [State Management](#state-management)
 11. [Deployment](#deployment)
-12. [Future Development](#future-development)
+12. [Current Development Tasks](#current-development-tasks)
+13. [Future Development](#future-development)
 
 ## Introduction
 
@@ -86,7 +87,7 @@ The authentication system uses Supabase Auth with a custom integration to synchr
 
 - **Authentication Middleware**: `src/middleware.ts`
 - **Supabase Client**: `src/lib/supabase/client.ts` and `src/lib/supabase/server.ts`
-- **Auth Components**: 
+- **Auth Components**:
   - `src/components/auth/LoginForm.tsx`
   - `src/components/auth/RegisterForm.tsx`
   - `src/components/auth/LogoutButton.tsx`
@@ -290,9 +291,26 @@ The application is deployed using Vercel with the following environment variable
 - `SUPABASE_SERVICE_ROLE_KEY`: Supabase service role key (server-side only)
 - `DATABASE_URL`: PostgreSQL connection string
 
+## Current Development Tasks
+
+### Task 005 - Search Strategy Builder Implementation
+
+The Search Strategy Builder implementation (Task 005) is nearly complete, with only subtask 5.5 (Search Strategy Management) remaining. This subtask focuses on implementing search strategy saving, history tracking, and management functionality.
+
+For detailed information about the current state of Task 005 and specific guidance on implementing the remaining features, refer to the dedicated document:
+
+- [Task 005 - Search Strategy Builder Implementation](./developer-handover-task005.md)
+
+This document provides:
+- Current application functionality related to the Search Builder
+- Detailed requirements for the remaining subtask 5.5
+- Integration points with existing code
+- Implementation recommendations
+- Potential challenges and solutions
+
 ## Future Development
 
-The following areas are planned for future development:
+Beyond the current tasks, the following areas are planned for future development:
 
 1. **Enhanced Search Capabilities**:
    - Integration with additional search APIs

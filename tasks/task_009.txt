@@ -10,22 +10,72 @@ Implement email functionality:
 Features:
 - Set up Resend email service
 - Create email templates for:
-  - Account verification (leveraging Supabase Auth)
-  - Password reset (leveraging Supabase Auth)
+  - Account verification
+  - Password reset
   - Report sharing
 - Implement email preferences
 - Create sharing functionality
 
 Technical Implementation:
-- Configure Resend integration with tRPC procedures
+- Configure Resend integration
 - Build email template system
 - Implement proper error handling
-- Create email tracking in Supabase
+- Create email tracking
 - Set up email queue management
 
 # Test Strategy:
 - Test email delivery
 - Verify template rendering
 - Test email preferences
-- Validate error handling with tRPC
+- Validate error handling
 - Test email queuing
+
+# Subtasks:
+## 1. Set up Resend email service integration [pending]
+### Dependencies: None
+### Description: Configure the Resend email service integration with proper error handling and environment setup
+### Details:
+- Create a Resend account and obtain API keys
+- Set up environment variables for API keys
+- Create email service utility class to handle communication with Resend API
+- Implement proper error handling for failed API calls
+- Add logging for email events
+- Create basic testing infrastructure to verify integration
+
+## 2. Build email template system [pending]
+### Dependencies: 9.1
+### Description: Create a reusable email template system with templates for account verification, password reset, and report sharing
+### Details:
+- Design and implement a template engine or integrate with an existing one
+- Create HTML/CSS templates for account verification emails
+- Create HTML/CSS templates for password reset emails
+- Create HTML/CSS templates for report sharing emails
+- Implement template variable substitution functionality
+- Add preview capability for templates
+- Ensure responsive design for all email templates
+
+## 3. Implement email queue management and tracking [pending]
+### Dependencies: 9.1, 9.2
+### Description: Create a robust email queue system with tracking capabilities to manage email delivery and monitor status
+### Details:
+- Design database schema for email queue and tracking
+- Implement queue management system for handling email sending
+- Add retry logic for failed email deliveries
+- Create email status tracking (sent, delivered, failed, etc.)
+- Implement rate limiting to prevent API abuse
+- Add analytics for email open rates and engagement
+- Create admin dashboard for monitoring email activity
+
+## 4. Implement user email preferences and sharing functionality [pending]
+### Dependencies: 9.1, 9.2, 9.3
+### Description: Add user email preference settings and report sharing capabilities to the application
+### Details:
+- Create user interface for managing email preferences
+- Implement database schema for storing user email preferences
+- Add preference options (notification types, frequency, opt-out)
+- Create report sharing UI in the application
+- Implement sharing permission system
+- Add functionality to generate shareable links
+- Create API endpoints for triggering sharing emails
+- Implement access control for shared reports
+
