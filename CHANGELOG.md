@@ -1,6 +1,19 @@
 # Changelog
 
-## Version 0.1.8 (Current)
+## Version 0.1.9 (Current)
+
+### tRPC API Usage Improvements
+
+- **tRPC API Usage Fix**
+  - Fixed incorrect usage of tRPC hooks causing runtime errors
+  - Created comprehensive documentation in docs/trpc-best-practices.md
+  - Implemented example components demonstrating proper tRPC mutation usage
+  - Created utility hooks and components for standardized tRPC usage
+  - Added ESLint rule to prevent direct usage of trpcClient in React components
+  - Created tests to verify proper tRPC usage
+  - Updated documentation with tRPC best practices
+
+## Version 0.1.8
 
 ### App Router Migration Implementation
 
@@ -53,6 +66,10 @@
   - Added layouts with authentication requirements
   - Added loading and error states for all route groups
   - Updated documentation with route groups implementation progress
+  - Committed route groups implementation to GitHub
+  - Fixed route conflicts between old and new route structures
+  - Updated router imports to use next/navigation instead of next/router
+  - Fixed router.push calls to use the new router API
 
 ## Version 0.1.7
 
